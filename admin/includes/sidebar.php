@@ -14,14 +14,31 @@
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
-                    <a href="index.html" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+                    <a href="index.php" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-laptop me-2"></i>Sample</a>
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-users me-2"></i>User Management</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="button.html" class="dropdown-item">Sub Sample</a>
+                            <a href="user.php" class="dropdown-item">Users</a>
+                            <a href="usertype.php" class="dropdown-item">User Types</a>
                         </div>
                     </div>
-                    <a href="chart.html" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Sample 2</a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-building me-2"></i>Organizations</a>
+                        <div class="dropdown-menu bg-transparent border-0">
+                            <a href="branch.php" class="dropdown-item">Branches</a>
+                            <a href="department.php" class="dropdown-item">Departments</a>
+                            <a href="position.php" class="dropdown-item">Positions</a>
+                        </div>
+                    </div>
+                    <a href="employee.php" class="nav-item nav-link"><i class="fa fa-user-tie me-2"></i>Employees</a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-handshake me-2"></i>Clients</a>
+                        <div class="dropdown-menu bg-transparent border-0">
+                            <a href="client.php" class="dropdown-item">Client Information</a>
+                            <a href="client_record.php" class="dropdown-item">Client Record</a>
+                            <a href="position.php" class="dropdown-item">Positions</a>
+                        </div>
+                    </div>
                 </div>
             </nav>
         </div>
