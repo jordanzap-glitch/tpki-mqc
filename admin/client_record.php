@@ -72,6 +72,26 @@ $res = mysqli_query($conn, $q);
 
     <?php include "includes/head.php"; ?>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+    /* Dark scrollbar for table container */
+    .table-responsive::-webkit-scrollbar { height:12px; width:12px; }
+    .table-responsive::-webkit-scrollbar-thumb { background:#000; border-radius:6px; }
+    .table-responsive::-webkit-scrollbar-track { background:#333; }
+    .table-responsive { scrollbar-color: #000 #333; scrollbar-width: thin; }
+    /* Center and size checkbox column */
+    .table th:first-child, .table td:first-child {
+        width: 44px;
+        padding: 0.35rem 0.5rem;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .table .form-check-input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        transform: none;
+    }
+    </style>
 </head>
 
 <body>
@@ -112,7 +132,7 @@ $res = mysqli_query($conn, $q);
                                     <th>Mobile No</th>
                                     <th>Barangay/Town</th>
                                     <th>City/Municipality</th>
-                                    <th>Action</th>
+                                    <th style="width:160px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -184,8 +204,8 @@ $res = mysqli_query($conn, $q);
                                         echo "<td>$mobile</td>";
                                         echo "<td>$barangay</td>";
                                         echo "<td>$city</td>";
-                                        echo "<td>";
-                                        // View button
+                                        echo "<td class=\"text-nowrap\" style=\"width:160px;\">";
+                                        // View button (icon)
                                         echo "<button type=\"button\" class=\"btn btn-sm btn-primary view-client me-1\" data-bs-toggle=\"modal\" data-bs-target=\"#clientViewModal\" ";
                                         echo "data-id=\"$id_attr\" data-clientid=\"$client_attr\" data-branchid=\"$branchid_attr\" data-branchname=\"$branchname_attr\" ";
                                         echo "data-last=\"$last_attr\" data-first=\"$first_attr\" data-middle=\"$middle_attr\" data-nick=\"$nick_attr\" ";
@@ -197,17 +217,17 @@ $res = mysqli_query($conn, $q);
                                         echo "data-splast=\"$sp_last_attr\" data-spfirst=\"$sp_first_attr\" data-spmid=\"$sp_mid_attr\" data-spwork=\"$sp_work_attr\" ";
                                         echo "data-spnick=\"$sp_nick_attr\" data-spage=\"$sp_age_attr\" data-spdob=\"$sp_dob_attr\" data-spincome=\"$sp_income_attr\" ";
                                         echo "data-lat=\"$lat_attr\" data-long=\"$long_attr\" data-po=\"$po_attr\" data-created=\"$created_attr\" ";
-                                        echo "data-profpic=\"$prof_pic_src\">View</button>";
+                                        echo "data-profpic=\"$prof_pic_src\"><i class=\"bi bi-eye\"></i></button>";
 
-                                        // Edit button (opens edit modal)
+                                        // Edit button (icon, opens edit modal)
                                         echo "<button type=\"button\" class=\"btn btn-sm btn-warning edit-client me-1\" data-bs-toggle=\"modal\" data-bs-target=\"#clientEditModal\" ";
                                         echo "data-id=\"$id_attr\" data-branchid=\"$branchid_attr\" data-last=\"$last_attr\" data-first=\"$first_attr\" data-middle=\"$middle_attr\" ";
-                                        echo "data-nick=\"$nick_attr\" data-mobile=\"$mobile_attr\" data-email=\"$email_attr\" data-house=\"$house_attr\" data-barangay=\"$barangay_attr\" data-city=\"$city_attr\" data-province=\"$province_attr\">Edit</button>";
+                                        echo "data-nick=\"$nick_attr\" data-mobile=\"$mobile_attr\" data-email=\"$email_attr\" data-house=\"$house_attr\" data-barangay=\"$barangay_attr\" data-city=\"$city_attr\" data-province=\"$province_attr\"><i class=\"bi bi-pencil\"></i></button>";
 
-                                        // Delete form/button (will be confirmed via JS)
+                                        // Delete form/button (icon) (will be confirmed via JS)
                                         echo "<form method=\"post\" class=\"d-inline delete-form\">";
                                         echo "<input type=\"hidden\" name=\"delete_id\" value=\"$id_attr\">";
-                                        echo "<button type=\"button\" class=\"btn btn-sm btn-danger del-client\">Delete</button>";
+                                        echo "<button type=\"button\" class=\"btn btn-sm btn-danger del-client\" aria-label=\"Delete\"><i class=\"bi bi-trash\"></i></button>";
                                         echo "</form>";
 
                                         echo "</td>";

@@ -1,3 +1,23 @@
+<?php
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+require_once __DIR__ . '/../../db/dbcon.php';
+$displayName = 'Jhon Doe';
+$roleLabel = 'User';
+if (!empty($_SESSION['userId'])) {
+    $uid = (int) $_SESSION['userId'];
+    $stmt = mysqli_prepare($conn, "SELECT First_Name, Last_Name, User_Type_ID FROM tbl_user WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $uid);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && $row = mysqli_fetch_assoc($res)) {
+            $displayName = htmlspecialchars(trim($row['First_Name'] . ' ' . $row['Last_Name']));
+            $roleLabel = (int)$row['User_Type_ID'] === 1 ? 'Admin' : 'Staff';
+        }
+    }
+}
+?>
+
 <div class="sidebar pe-4 pb-3">
             <nav class="navbar bg-secondary navbar-dark">
                 <a href="index.html" class="navbar-brand mx-4 mb-3">
@@ -9,8 +29,8 @@
                         <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
                     </div>
                     <div class="ms-3">
-                        <h6 class="mb-0">Jhon Doe</h6>
-                        <span>Admin</span>
+                        <h6 class="mb-0"><?php echo $displayName; ?></h6>
+                        <span><?php echo $roleLabel; ?></span>
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
@@ -36,6 +56,10 @@
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="client.php" class="dropdown-item">Client Information</a>
                             <a href="client_record.php" class="dropdown-item">Client Record</a>
+                            <a href="client_asset.php" class="dropdown-item">Client Assets</a>
+                            <a href="client_business.php" class="dropdown-item">Client Business</a>
+                            <a href="client_dep.php" class="dropdown-item">Client Dependents</a>
+                            <a href="client_inc_exp.php" class="dropdown-item">Income & Expenses</a>
                             <a href="position.php" class="dropdown-item">Positions</a>
                         </div>
                     </div>

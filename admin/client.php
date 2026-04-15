@@ -1,3 +1,7 @@
+<?php
+session_start();
+require_once __DIR__ . '/../db/dbcon.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -29,7 +33,7 @@
            <?php include "includes/navbar.php"; ?>
             <!-- Navbar End -->
 
-            <?php require_once __DIR__ . '/../db/dbcon.php'; ?>
+            
 
             <?php
             // Handle form submission

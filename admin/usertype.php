@@ -1,3 +1,7 @@
+<?php
+session_start();
+require_once __DIR__ . '/../db/dbcon.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -51,7 +55,7 @@
 
 
             <!-- User Type List Start -->
-            <?php require_once __DIR__ . '/../db/dbcon.php'; ?>
+        
             <div class="container-fluid pt-4 px-4">
                 <div class="bg-secondary rounded p-4">
                     <div class="d-flex align-items-center justify-content-between mb-4">

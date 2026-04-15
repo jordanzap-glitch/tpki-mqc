@@ -1,3 +1,7 @@
+<?php
+session_start();
+require_once __DIR__ . '/../db/dbcon.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
