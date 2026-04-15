@@ -3,7 +3,7 @@ require __DIR__ . '/db/dbcon.php';
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: signin.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -12,7 +12,7 @@ $password = isset($_POST['password']) ? $_POST['password'] : '';
 
 if (empty($email) || empty($password)) {
     $_SESSION['error'] = 'Please enter both email and password.';
-    header('Location: signin.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -40,7 +40,7 @@ if ($stmt) {
 }
 
 $_SESSION['error'] = 'Invalid email or password.';
-header('Location: signin.php');
+header('Location: index.php');
 exit;
 
 ?>
