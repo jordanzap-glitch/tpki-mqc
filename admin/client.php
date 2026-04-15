@@ -5,6 +5,7 @@ include '../db/dbcon.php';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     // Simple helper: get POST value or null
     function gv($k) { return isset($_POST[$k]) && $_POST[$k] !== '' ? $_POST[$k] : null; }
 
@@ -88,6 +89,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
     } else {
         $error = 'Prepare failed: ' . mysqli_error($conn);
+    }
+
+    // If request is AJAX, return JSON and stop further output
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        if (!empty($success)) {
+            echo json_encode(['status' => 'success', 'message' => $success]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => isset($error) ? $error : 'Unknown error']);
+        }
+        exit;
     }
 }
 
@@ -360,23 +372,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-    <?php if (!empty($success)): ?>
-        Swal.fire({
-            icon: 'success',
-            title: 'Saved',
-            text: <?php echo json_encode($success); ?>,
-            confirmButtonText: 'OK'
+    document.addEventListener('DOMContentLoaded', function(){
+        const form = document.querySelector('form[enctype="multipart/form-data"]');
+        if (!form) return;
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const fd = new FormData(form);
+            try {
+                const res = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message, confirmButtonText: 'OK' });
+                    form.reset();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Save failed', confirmButtonText: 'OK' });
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error', confirmButtonText: 'OK' });
+            }
         });
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: <?php echo json_encode($error); ?>,
-            confirmButtonText: 'OK'
-        });
-    <?php endif; ?>
+    });
     </script>
 </body>
 
