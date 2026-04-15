@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../db/dbcon.php';
+require_once __DIR__ . '/../db/dbcon.php';
 
 // Handle create income/expense
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_inc_exp'])) {
