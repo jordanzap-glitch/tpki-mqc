@@ -1,5 +1,7 @@
 <?php 
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 include __DIR__ . '/../db/dbcon.php';
 
 // Handle delete request
@@ -53,6 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
 // Fetch records for display
 $q = "SELECT r.*, b.Branch_Name FROM tbl_client_info r LEFT JOIN tbl_branch b ON r.Branch_ID = b.Branch_ID ORDER BY r.id DESC";
 $res = mysqli_query($conn, $q);
+if ($res === false) {
+    $error = 'Fetch failed: ' . mysqli_error($conn);
+    $res = false;
+}
 
 ?>
 
