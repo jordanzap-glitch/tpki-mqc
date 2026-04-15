@@ -1,6 +1,6 @@
 <?php 
 session_start();
-require_once __DIR__ . '/../db/dbcon.php';
+include '../db/dbcon.php';
 
 // Handle delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
