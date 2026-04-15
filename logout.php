@@ -20,7 +20,7 @@ if (ini_get('session.use_cookies')) {
 session_destroy();
 
 // Redirect to sign-in page
-header('Location: signin.php');
+header('Location: index.php');
 exit;
 
 ?>
