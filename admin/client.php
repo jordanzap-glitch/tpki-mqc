@@ -1,6 +1,96 @@
 <?php
+error_reporting (E_ALL);
 session_start();
 include '../db/dbcon.php';
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Simple helper: get POST value or null
+    function gv($k) { return isset($_POST[$k]) && $_POST[$k] !== '' ? $_POST[$k] : null; }
+
+    // Generate Client_ID: CL-### based on last numeric
+    $nextNum = 1;
+    $res = mysqli_query($conn, "SELECT Client_ID FROM tbl_client_info ORDER BY id DESC LIMIT 1");
+    if ($res && mysqli_num_rows($res) > 0) {
+        $row = mysqli_fetch_assoc($res);
+        $last = $row['Client_ID'];
+        if (preg_match('/(\d+)$/', $last, $m)) {
+            $nextNum = intval($m[1]) + 1;
+        }
+    }
+    $client_id = sprintf('CL-%03d', $nextNum);
+
+    // Collect fields (trim and nullify empty)
+    $branch_id = gv('Branch_ID');
+    $last_name = gv('Last_Name');
+    $first_name = gv('First_Name');
+    $middle_name = gv('Middle_Name');
+    $nickname = gv('Nickname');
+    $age = gv('Age');
+    $gender = gv('Gender');
+    $dob = gv('Date_Of_Birth');
+    $pob = gv('Place_Of_Birth');
+    $civil = gv('Civil_Status');
+    $religion = gv('Religion');
+    $mother_last = gv('Mother_Last_Name');
+    $mother_first = gv('Mother_First_Name');
+    $mother_middle = gv('Mother_Middle_Name');
+    $mobile = gv('Mobile_No');
+    $email = gv('Email_Address');
+    $house = gv('House_Street_Bldng');
+    $barangay = gv('Barangay_Town');
+    $city = gv('City_Municipality');
+    $province = gv('Province');
+    $zip = gv('Zip_Code');
+    $edu = gv('Educational_Attainment');
+    $no_children = gv('No_Of_Children');
+    $id_presented = gv('ID_Presented');
+    $id_ref_no = gv('ID_Reference_No');
+    $spouse_last = gv('Spouse_Last_Name');
+    $spouse_first = gv('Spouse_First_Name');
+    $spouse_middle = gv('Spouse_Middle_Name');
+    $spouse_work = gv('Spouse_Work');
+    $spouse_nick = gv('Spouse_Nickname');
+    $spouse_age = gv('Spouse_Age');
+    $spouse_dob = gv('Spouse_DOB');
+    $spouse_income = gv('Spouse_Income');
+    $latitude = gv('Latitude');
+    $longitude = gv('Longitude');
+    $project_officer = gv('Project_Officer_ID');
+
+    // Handle profile picture upload (optional)
+    $prof_pic = null;
+    if (!empty($_FILES['Prof_Pic']) && $_FILES['Prof_Pic']['error'] === UPLOAD_ERR_OK) {
+        $prof_pic = file_get_contents($_FILES['Prof_Pic']['tmp_name']);
+    }
+
+    // Prepared INSERT
+    $sql = "INSERT INTO tbl_client_info
+                (Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion, Mother_Last_Name, Mother_First_Name, Mother_Middle_Name, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No, Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income, Latitude, Longitude, Project_Officer_ID, Prof_Pic)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, str_repeat('s', 38), $client_id, $branch_id, $last_name, $first_name, $middle_name, $nickname, $age, $gender, $dob, $pob, $civil, $religion, $mother_last, $mother_first, $mother_middle, $mobile, $email, $house, $barangay, $city, $province, $zip, $edu, $no_children, $id_presented, $id_ref_no, $spouse_last, $spouse_first, $spouse_middle, $spouse_work, $spouse_nick, $spouse_age, $spouse_dob, $spouse_income, $latitude, $longitude, $project_officer, $prof_pic);
+
+        // Because Prof_Pic is blob, use send_long_data if available
+        if ($prof_pic !== null) {
+            // send_long_data requires mysqli_stmt_send_long_data, which expects param index starting at 0
+            $param_index = 36; // zero-based index of Prof_Pic in bind list
+            mysqli_stmt_send_long_data($stmt, $param_index, $prof_pic);
+        }
+
+        if (mysqli_stmt_execute($stmt)) {
+            $success = 'Client successfully added with ID: ' . htmlspecialchars($client_id);
+        } else {
+            $error = 'Insert error: ' . mysqli_stmt_error($stmt);
+        }
+        mysqli_stmt_close($stmt);
+    } else {
+        $error = 'Prepare failed: ' . mysqli_error($conn);
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,7 +108,7 @@ include '../db/dbcon.php';
 <body>
     <div class="container-fluid position-relative d-flex p-0">
         <!-- Spinner Start -->
-        <?php include "includes/spinner.php"; ?>
+       
         <!-- Spinner End -->
 
 
@@ -35,95 +125,7 @@ include '../db/dbcon.php';
 
             
 
-            <?php
-            // Handle form submission
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // Simple helper: get POST value or null
-                function gv($k) { return isset($_POST[$k]) && $_POST[$k] !== '' ? $_POST[$k] : null; }
-
-                // Generate Client_ID: CL-### based on last numeric
-                $nextNum = 1;
-                $res = mysqli_query($conn, "SELECT Client_ID FROM tbl_client_info ORDER BY id DESC LIMIT 1");
-                if ($res && mysqli_num_rows($res) > 0) {
-                    $row = mysqli_fetch_assoc($res);
-                    $last = $row['Client_ID'];
-                    if (preg_match('/(\d+)$/', $last, $m)) {
-                        $nextNum = intval($m[1]) + 1;
-                    }
-                }
-                $client_id = sprintf('CL-%03d', $nextNum);
-
-                // Collect fields (trim and nullify empty)
-                $branch_id = gv('Branch_ID');
-                $last_name = gv('Last_Name');
-                $first_name = gv('First_Name');
-                $middle_name = gv('Middle_Name');
-                $nickname = gv('Nickname');
-                $age = gv('Age');
-                $gender = gv('Gender');
-                $dob = gv('Date_Of_Birth');
-                $pob = gv('Place_Of_Birth');
-                $civil = gv('Civil_Status');
-                $religion = gv('Religion');
-                $mother_last = gv('Mother_Last_Name');
-                $mother_first = gv('Mother_First_Name');
-                $mother_middle = gv('Mother_Middle_Name');
-                $mobile = gv('Mobile_No');
-                $email = gv('Email_Address');
-                $house = gv('House_Street_Bldng');
-                $barangay = gv('Barangay_Town');
-                $city = gv('City_Municipality');
-                $province = gv('Province');
-                $zip = gv('Zip_Code');
-                $edu = gv('Educational_Attainment');
-                $no_children = gv('No_Of_Children');
-                $id_presented = gv('ID_Presented');
-                $id_ref_no = gv('ID_Reference_No');
-                $spouse_last = gv('Spouse_Last_Name');
-                $spouse_first = gv('Spouse_First_Name');
-                $spouse_middle = gv('Spouse_Middle_Name');
-                $spouse_work = gv('Spouse_Work');
-                $spouse_nick = gv('Spouse_Nickname');
-                $spouse_age = gv('Spouse_Age');
-                $spouse_dob = gv('Spouse_DOB');
-                $spouse_income = gv('Spouse_Income');
-                $latitude = gv('Latitude');
-                $longitude = gv('Longitude');
-                $project_officer = gv('Project_Officer_ID');
-
-                // Handle profile picture upload (optional)
-                $prof_pic = null;
-                if (!empty($_FILES['Prof_Pic']) && $_FILES['Prof_Pic']['error'] === UPLOAD_ERR_OK) {
-                    $prof_pic = file_get_contents($_FILES['Prof_Pic']['tmp_name']);
-                }
-
-                // Prepared INSERT
-                $sql = "INSERT INTO tbl_client_info
-                (Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion, Mother_Last_Name, Mother_First_Name, Mother_Middle_Name, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No, Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income, Latitude, Longitude, Project_Officer_ID, Prof_Pic)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-                $stmt = mysqli_prepare($conn, $sql);
-                if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, str_repeat('s', 38), $client_id, $branch_id, $last_name, $first_name, $middle_name, $nickname, $age, $gender, $dob, $pob, $civil, $religion, $mother_last, $mother_first, $mother_middle, $mobile, $email, $house, $barangay, $city, $province, $zip, $edu, $no_children, $id_presented, $id_ref_no, $spouse_last, $spouse_first, $spouse_middle, $spouse_work, $spouse_nick, $spouse_age, $spouse_dob, $spouse_income, $latitude, $longitude, $project_officer, $prof_pic);
-
-                    // Because Prof_Pic is blob, use send_long_data if available
-                    if ($prof_pic !== null) {
-                        // send_long_data requires mysqli_stmt_send_long_data, which expects param index starting at 0
-                        $param_index = 36; // zero-based index of Prof_Pic in bind list
-                        mysqli_stmt_send_long_data($stmt, $param_index, $prof_pic);
-                    }
-
-                    if (mysqli_stmt_execute($stmt)) {
-                        $success = 'Client successfully added with ID: ' . htmlspecialchars($client_id);
-                    } else {
-                        $error = 'Insert error: ' . mysqli_stmt_error($stmt);
-                    }
-                    mysqli_stmt_close($stmt);
-                } else {
-                    $error = 'Prepare failed: ' . mysqli_error($conn);
-                }
-            }
-            ?>
+            
 
             <div class="container-fluid pt-4 px-4">
                 <div class="bg-secondary text-start rounded p-4">
