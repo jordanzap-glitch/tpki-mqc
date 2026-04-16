@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
 // Simple JSON endpoint for client-side fetching
 if (isset($_GET['fetch_clients'])) {
     $out = ['data' => []];
-    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Mobile_No, Barangay_Town, City_Municipality FROM tbl_client_info ORDER BY id DESC";
+    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Mobile_No, Email_Address, Date_Of_Birth, Age, Civil_Status, Barangay_Town, City_Municipality, Province FROM tbl_client_info ORDER BY id DESC";
     $res = mysqli_query($conn, $sql);
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) {

@@ -58,6 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $latitude = gv('Latitude');
     $longitude = gv('Longitude');
     $project_officer = gv('Project_Officer_ID');
+    // Prefer Project Officer ID from session if available
+    if (isset($_SESSION['User_ID']) && $_SESSION['User_ID'] !== '') {
+        $project_officer = $_SESSION['User_ID'];
+    } elseif (isset($_SESSION['UserID']) && $_SESSION['UserID'] !== '') {
+        $project_officer = $_SESSION['UserID'];
+    }
 
     // Handle profile picture upload (optional)
     $prof_pic = null;
@@ -214,7 +220,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-4">
                                 <label class="form-label">Civil Status</label>
-                                <input name="Civil_Status" class="form-control" required>
+                                <select name="Civil_Status" class="form-select" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="M"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='M') echo ' selected'; ?>>Married</option>
+                                    <option value="S"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='S') echo ' selected'; ?>>Single</option>
+                                    <option value="SP"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='SP') echo ' selected'; ?>>Single Parent</option>
+                                    <option value="MO"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='MO') echo ' selected'; ?>>Married w/o Child</option>
+                                </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Religion</label>
@@ -329,7 +341,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-6">
                                 <label class="form-label">Project Officer ID</label>
-                                <input name="Project_Officer_ID" class="form-control" required>
+                                <?php $po_display = isset($_SESSION['User_ID']) ? htmlspecialchars($_SESSION['User_ID']) : (isset($_SESSION['UserID']) ? htmlspecialchars($_SESSION['UserID']) : ''); ?>
+                                <input class="form-control" value="<?php echo $po_display; ?>" readonly>
+                                <input type="hidden" name="Project_Officer_ID" value="<?php echo $po_display; ?>">
                             </div>
 
                             <div class="col-md-6">
