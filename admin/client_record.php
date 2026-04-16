@@ -51,12 +51,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
     }
 }
 
-// Fetch records for display
-$q = "SELECT r.*, b.Branch_Name FROM tbl_client_info r LEFT JOIN tbl_branch b ON r.Branch_ID = b.Branch_ID ORDER BY r.id DESC";
-$res = mysqli_query($conn, $q);
-if ($res === false) {
-    $error = 'Fetch failed: ' . mysqli_error($conn);
-    $res = false;
+// Simple JSON endpoint for client-side fetching
+if (isset($_GET['fetch_clients'])) {
+    $out = ['data' => []];
+    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Mobile_No, Barangay_Town, City_Municipality FROM tbl_client_info ORDER BY id DESC";
+    $res = mysqli_query($conn, $sql);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $out['data'][] = $row;
+        }
+        mysqli_free_result($res);
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($out);
+    exit;
 }
 
 ?>
@@ -142,105 +150,9 @@ if ($res === false) {
                             </thead>
                             <tbody>
                                 <?php
-                                if ($res && mysqli_num_rows($res) > 0) {
-                                    while ($r = mysqli_fetch_assoc($res)) {
-                                        $id = (int) $r['id'];
-                                        $client = htmlspecialchars($r['Client_ID']);
-                                        $branch = htmlspecialchars($r['Branch_Name'] ?? $r['Branch_ID']);
-                                        $last = htmlspecialchars($r['Last_Name']);
-                                        $first = htmlspecialchars($r['First_Name']);
-                                        $mobile = htmlspecialchars($r['Mobile_No']);
-                                        $barangay = htmlspecialchars($r['Barangay_Town']);
-                                        $city = htmlspecialchars($r['City_Municipality']);
-
-                                        // prepare attributes for view button (escape quotes)
-                                        $id_attr = htmlspecialchars($r['id'], ENT_QUOTES);
-                                        $client_attr = htmlspecialchars($r['Client_ID'], ENT_QUOTES);
-                                        $branchid_attr = htmlspecialchars($r['Branch_ID'], ENT_QUOTES);
-                                        $branchname_attr = htmlspecialchars($r['Branch_Name'] ?? '', ENT_QUOTES);
-                                        $last_attr = htmlspecialchars($r['Last_Name'], ENT_QUOTES);
-                                        $first_attr = htmlspecialchars($r['First_Name'], ENT_QUOTES);
-                                        $middle_attr = htmlspecialchars($r['Middle_Name'], ENT_QUOTES);
-                                        $nick_attr = htmlspecialchars($r['Nickname'], ENT_QUOTES);
-                                        $age_attr = htmlspecialchars($r['Age'], ENT_QUOTES);
-                                        $gender_attr = htmlspecialchars($r['Gender'], ENT_QUOTES);
-                                        $dob_attr = htmlspecialchars($r['Date_Of_Birth'], ENT_QUOTES);
-                                        $pob_attr = htmlspecialchars($r['Place_Of_Birth'], ENT_QUOTES);
-                                        $civil_attr = htmlspecialchars($r['Civil_Status'], ENT_QUOTES);
-                                        $religion_attr = htmlspecialchars($r['Religion'], ENT_QUOTES);
-                                        $mlast_attr = htmlspecialchars($r['Mother_Last_Name'], ENT_QUOTES);
-                                        $mfirst_attr = htmlspecialchars($r['Mother_First_Name'], ENT_QUOTES);
-                                        $mmid_attr = htmlspecialchars($r['Mother_Middle_Name'], ENT_QUOTES);
-                                        $mobile_attr = htmlspecialchars($r['Mobile_No'], ENT_QUOTES);
-                                        $email_attr = htmlspecialchars($r['Email_Address'], ENT_QUOTES);
-                                        $house_attr = htmlspecialchars($r['House_Street_Bldng'], ENT_QUOTES);
-                                        $barangay_attr = htmlspecialchars($r['Barangay_Town'], ENT_QUOTES);
-                                        $city_attr = htmlspecialchars($r['City_Municipality'], ENT_QUOTES);
-                                        $province_attr = htmlspecialchars($r['Province'], ENT_QUOTES);
-                                        $zip_attr = htmlspecialchars($r['Zip_Code'], ENT_QUOTES);
-                                        $edu_attr = htmlspecialchars($r['Educational_Attainment'], ENT_QUOTES);
-                                        $children_attr = htmlspecialchars($r['No_Of_Children'], ENT_QUOTES);
-                                        $idpres_attr = htmlspecialchars($r['ID_Presented'], ENT_QUOTES);
-                                        $idref_attr = htmlspecialchars($r['ID_Reference_No'], ENT_QUOTES);
-                                        $sp_last_attr = htmlspecialchars($r['Spouse_Last_Name'], ENT_QUOTES);
-                                        $sp_first_attr = htmlspecialchars($r['Spouse_First_Name'], ENT_QUOTES);
-                                        $sp_mid_attr = htmlspecialchars($r['Spouse_Middle_Name'], ENT_QUOTES);
-                                        $sp_work_attr = htmlspecialchars($r['Spouse_Work'], ENT_QUOTES);
-                                        $sp_nick_attr = htmlspecialchars($r['Spouse_Nickname'], ENT_QUOTES);
-                                        $sp_age_attr = htmlspecialchars($r['Spouse_Age'], ENT_QUOTES);
-                                        $sp_dob_attr = htmlspecialchars($r['Spouse_DOB'], ENT_QUOTES);
-                                        $sp_income_attr = htmlspecialchars($r['Spouse_Income'], ENT_QUOTES);
-                                        $lat_attr = htmlspecialchars($r['Latitude'], ENT_QUOTES);
-                                        $long_attr = htmlspecialchars($r['Longitude'], ENT_QUOTES);
-                                        $po_attr = htmlspecialchars($r['Project_Officer_ID'], ENT_QUOTES);
-                                        $created_attr = htmlspecialchars($r['created_at'], ENT_QUOTES);
-                                        // profile pic base64 if available
-                                        $prof_pic_src = '';
-                                        if (!empty($r['Prof_Pic'])) {
-                                            $prof_pic_src = 'data:image/jpeg;base64,' . base64_encode($r['Prof_Pic']);
-                                        }
-
-                                        echo "<tr>";
-                                        echo "<td><input class=\"form-check-input\" type=\"checkbox\"></td>";
-                                        echo "<td>$client</td>";
-                                        echo "<td>$branch</td>";
-                                        echo "<td>$last</td>";
-                                        echo "<td>$first</td>";
-                                        echo "<td>$mobile</td>";
-                                        echo "<td>$barangay</td>";
-                                        echo "<td>$city</td>";
-                                        echo "<td class=\"text-nowrap\" style=\"width:160px;\">";
-                                        // View button (icon)
-                                        echo "<button type=\"button\" class=\"btn btn-sm btn-primary view-client me-1\" data-bs-toggle=\"modal\" data-bs-target=\"#clientViewModal\" ";
-                                        echo "data-id=\"$id_attr\" data-clientid=\"$client_attr\" data-branchid=\"$branchid_attr\" data-branchname=\"$branchname_attr\" ";
-                                        echo "data-last=\"$last_attr\" data-first=\"$first_attr\" data-middle=\"$middle_attr\" data-nick=\"$nick_attr\" ";
-                                        echo "data-age=\"$age_attr\" data-gender=\"$gender_attr\" data-dob=\"$dob_attr\" data-pob=\"$pob_attr\" ";
-                                        echo "data-civil=\"$civil_attr\" data-religion=\"$religion_attr\" data-mlast=\"$mlast_attr\" data-mfirst=\"$mfirst_attr\" ";
-                                        echo "data-mmid=\"$mmid_attr\" data-mobile=\"$mobile_attr\" data-email=\"$email_attr\" data-house=\"$house_attr\" ";
-                                        echo "data-barangay=\"$barangay_attr\" data-city=\"$city_attr\" data-province=\"$province_attr\" data-zip=\"$zip_attr\" ";
-                                        echo "data-edu=\"$edu_attr\" data-children=\"$children_attr\" data-idpres=\"$idpres_attr\" data-idref=\"$idref_attr\" ";
-                                        echo "data-splast=\"$sp_last_attr\" data-spfirst=\"$sp_first_attr\" data-spmid=\"$sp_mid_attr\" data-spwork=\"$sp_work_attr\" ";
-                                        echo "data-spnick=\"$sp_nick_attr\" data-spage=\"$sp_age_attr\" data-spdob=\"$sp_dob_attr\" data-spincome=\"$sp_income_attr\" ";
-                                        echo "data-lat=\"$lat_attr\" data-long=\"$long_attr\" data-po=\"$po_attr\" data-created=\"$created_attr\" ";
-                                        echo "data-profpic=\"$prof_pic_src\"><i class=\"bi bi-eye\"></i></button>";
-
-                                        // Edit button (icon, opens edit modal)
-                                        echo "<button type=\"button\" class=\"btn btn-sm btn-warning edit-client me-1\" data-bs-toggle=\"modal\" data-bs-target=\"#clientEditModal\" ";
-                                        echo "data-id=\"$id_attr\" data-branchid=\"$branchid_attr\" data-last=\"$last_attr\" data-first=\"$first_attr\" data-middle=\"$middle_attr\" ";
-                                        echo "data-nick=\"$nick_attr\" data-mobile=\"$mobile_attr\" data-email=\"$email_attr\" data-house=\"$house_attr\" data-barangay=\"$barangay_attr\" data-city=\"$city_attr\" data-province=\"$province_attr\"><i class=\"bi bi-pencil\"></i></button>";
-
-                                        // Delete form/button (icon) (will be confirmed via JS)
-                                        echo "<form method=\"post\" class=\"d-inline delete-form\">";
-                                        echo "<input type=\"hidden\" name=\"delete_id\" value=\"$id_attr\">";
-                                        echo "<button type=\"button\" class=\"btn btn-sm btn-danger del-client\" aria-label=\"Delete\"><i class=\"bi bi-trash\"></i></button>";
-                                        echo "</form>";
-
-                                        echo "</td>";
-                                        echo "</tr>";
-                                    }
-                                } else {
-                                    echo "<tr><td colspan=9 class=\"text-center\">No records found</td></tr>";
-                                }
+                                // Server-side rendering of table rows removed.
+                                // Populate table rows client-side (AJAX) or re-enable server fetch if needed.
+                                echo '<tr><td colspan="9" class="text-center">No records loaded (server-side fetch removed)</td></tr>';
                                 ?>
                             </tbody>
                         </table>
@@ -418,12 +330,61 @@ if ($res === false) {
     <script>
     $(document).ready(function() {
         $('#recordsTable').DataTable({
+            ajax: 'client_record.php?fetch_clients=1',
             paging: true,
             searching: true,
             info: true,
             ordering: true,
-            columnDefs: [
-                { orderable: false, targets: [0, 8] }
+            columns: [
+                { data: null, orderable: false, render: function(){ return '<input class="form-check-input" type="checkbox">'; } },
+                { data: 'Client_ID' },
+                { data: 'Branch_ID' },
+                { data: 'Last_Name' },
+                { data: 'First_Name' },
+                { data: 'Mobile_No' },
+                { data: 'Barangay_Town' },
+                { data: 'City_Municipality' },
+                { data: null, orderable: false, render: function(data, type, row){
+                        var id = row.id || '';
+                        var clientid = row.Client_ID || '';
+                        var branchid = row.Branch_ID || '';
+                        var last = row.Last_Name || '';
+                        var first = row.First_Name || '';
+                        var middle = row.Middle_Name || '';
+                        var mobile = row.Mobile_No || '';
+                        var barangay = row.Barangay_Town || '';
+                        var city = row.City_Municipality || '';
+
+                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-client me-1" data-bs-toggle="modal" data-bs-target="#clientViewModal' + '" '
+                            + 'data-id="'+id+'" '
+                            + 'data-clientid="'+clientid+'" '
+                            + 'data-branchid="'+branchid+'" '
+                            + 'data-last="'+last+'" '
+                            + 'data-first="'+first+'" '
+                            + 'data-middle="'+middle+'" '
+                            + 'data-mobile="'+mobile+'" '
+                            + 'data-barangay="'+barangay+'" '
+                            + 'data-city="'+city+'">'
+                            + '<i class="bi bi-eye"></i></button>';
+
+                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-client me-1" data-bs-toggle="modal" data-bs-target="#clientEditModal' + '" '
+                            + 'data-id="'+id+'" '
+                            + 'data-branchid="'+branchid+'" '
+                            + 'data-last="'+last+'" '
+                            + 'data-first="'+first+'" '
+                            + 'data-middle="'+middle+'" '
+                            + 'data-mobile="'+mobile+'" '
+                            + 'data-barangay="'+barangay+'" '
+                            + 'data-city="'+city+'">'
+                            + '<i class="bi bi-pencil"></i></button>';
+
+                        var deleteBtn = '<form method="post" class="d-inline delete-form" style="display:inline">'
+                            + '<input type="hidden" name="delete_id" value="'+id+'">'
+                            + '<button type="button" class="btn btn-sm btn-danger del-client"><i class="bi bi-trash"></i></button>'
+                            + '</form>';
+
+                        return '<div class="text-nowrap">' + viewBtn + editBtn + deleteBtn + '</div>';
+                    } }
             ]
         });
 
