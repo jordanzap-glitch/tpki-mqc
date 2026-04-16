@@ -124,6 +124,10 @@ if ($rq) {
     <?php include "includes/head.php"; ?>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+    /* Force table data to uppercase for visual consistency */
+    .table tbody td { text-transform: uppercase; }
+    </style>
 </head>
 
 <body>

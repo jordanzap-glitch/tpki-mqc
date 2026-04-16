@@ -104,6 +104,8 @@ if (isset($_GET['fetch_clients'])) {
         margin: 0;
         transform: none;
     }
+    /* Force table data to uppercase for visual consistency */
+    .table tbody td { text-transform: uppercase; }
     </style>
 </head>
 
