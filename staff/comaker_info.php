@@ -270,6 +270,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
     <!-- Template Javascript -->
     <script src="../js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <?php
+    if (!empty($success)) {
+        $msg = addslashes($success);
+        echo "<script>Swal.fire({icon: 'success', title: 'Success', text: '{$msg}'});</script>";
+    } elseif (!empty($error)) {
+        $emsg = addslashes($error);
+        echo "<script>Swal.fire({icon: 'error', title: 'Error', text: '{$emsg}'});</script>";
+    }
+    ?>
 </body>
 
 </html>
