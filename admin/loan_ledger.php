@@ -397,6 +397,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 $('#sTerm').text(d.term || '');
                 $('#sPeriods').text(d.No_of_Periods || '');
                 $('#sPayMode').text((d.Payment_Mode||'').toUpperCase());
+                // Hide the No. of Periods field in the preview
+                $('#sPeriods').closest('.col-md-3').hide();
                 $('#loanSummary').slideDown();
                 $('#btnGenerate').prop('disabled', false);
                 loadLedger(selectedLoanID);

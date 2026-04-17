@@ -9,17 +9,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Simple helper: get POST value or null
     function gv($k) { return isset($_POST[$k]) && $_POST[$k] !== '' ? $_POST[$k] : null; }
 
-    // Generate Client_ID: CL-### based on last numeric
-    $nextNum = 1;
-    $res = mysqli_query($conn, "SELECT Client_ID FROM tbl_client_info ORDER BY id DESC LIMIT 1");
-    if ($res && mysqli_num_rows($res) > 0) {
-        $row = mysqli_fetch_assoc($res);
-        $last = $row['Client_ID'];
-        if (preg_match('/(\d+)$/', $last, $m)) {
-            $nextNum = intval($m[1]) + 1;
-        }
+    // Generate Client_ID: CL-xxxxx (5 alphanumeric characters) and ensure uniqueness
+    function genClientID($conn)
+    {
+        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        do {
+            $rand = '';
+            for ($i = 0; $i < 5; $i++) {
+                $rand .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $cid = 'CL-' . $rand;
+
+            $chk = mysqli_prepare($conn, "SELECT COUNT(*) AS cnt FROM tbl_client_info WHERE Client_ID = ? LIMIT 1");
+            mysqli_stmt_bind_param($chk, 's', $cid);
+            mysqli_stmt_execute($chk);
+            $chk_res = mysqli_stmt_get_result($chk);
+            $chk_row = mysqli_fetch_assoc($chk_res);
+            mysqli_stmt_close($chk);
+        } while ($chk_row && intval($chk_row['cnt']) > 0);
+
+        return $cid;
     }
-    $client_id = sprintf('CL-%03d', $nextNum);
+
+    $client_id = genClientID($conn);
 
     // Collect fields (trim and nullify empty)
     $branch_id = gv('Branch_ID');
