@@ -60,7 +60,7 @@ if (!empty($_SESSION['userId'])) {
                             <a href="client_business.php" class="dropdown-item">Client Business</a>
                             <a href="client_dep.php" class="dropdown-item">Client Dependents</a>
                             <a href="client_inc_exp.php" class="dropdown-item">Income & Expenses</a>
-                            <a href="position.php" class="dropdown-item">Positions</a>
+
                         </div>
                     </div>
                      <div class="nav-item dropdown">
