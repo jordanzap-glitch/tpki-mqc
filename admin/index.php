@@ -41,31 +41,42 @@ if ($res4) {
 }
 // Prepare loan summary aggregated by year and quarter
 $loanSummaryData = [];
-$sqlSum = "SELECT YEAR(STR_TO_DATE(Effective_Date, '%Y-%m-%d')) AS yr,
-                                             QUARTER(STR_TO_DATE(Effective_Date, '%Y-%m-%d')) AS q,
-                                             COUNT(id) AS cnt
-                                         FROM tbl_loan_info
-                                         WHERE Effective_Date IS NOT NULL
-                                             AND Effective_Date <> ''
-                                             AND Effective_Date <> '0000-00-00'
-                                         GROUP BY yr, q
-                                         ORDER BY yr, q";
+// Safer aggregation in PHP to avoid SQL DATE parsing errors
+$sqlSum = "SELECT Effective_Date FROM tbl_loan_info WHERE Effective_Date IS NOT NULL AND Effective_Date <> '' AND Effective_Date <> '0000-00-00'";
 $resSum = mysqli_query($conn, $sqlSum);
+$agg = [];
 if ($resSum) {
     while ($row = mysqli_fetch_assoc($resSum)) {
-        $yr = intval($row['yr']);
-        $q = intval($row['q']);
-        $cnt = intval($row['cnt']);
-        // map quarter to month start
-        $month = 1;
-        if ($q === 1) $month = 1;
-        elseif ($q === 2) $month = 4;
-        elseif ($q === 3) $month = 7;
-        elseif ($q === 4) $month = 10;
-        $dateStr = sprintf('%04d/%02d/01', $yr, $month);
-        $loanSummaryData[] = ['x' => $dateStr, 'y' => $cnt];
+        $ed = trim($row['Effective_Date'] ?? '');
+        if ($ed === '') continue;
+        // try strtotime, fall back to DateTime
+        $ts = strtotime($ed);
+        if ($ts === false) {
+            try { $dt = new DateTime($ed); $ts = $dt->getTimestamp(); } catch (Exception $e) { continue; }
+        }
+        $yr = intval(date('Y', $ts));
+        $mon = intval(date('n', $ts));
+        $q = intval(floor(($mon - 1) / 3) + 1);
+        $key = sprintf('%04d-Q%d', $yr, $q);
+        if (!isset($agg[$key])) $agg[$key] = ['yr' => $yr, 'q' => $q, 'cnt' => 0];
+        $agg[$key]['cnt']++;
     }
     mysqli_free_result($resSum);
+}
+
+// Sort aggregated keys by year then quarter
+usort($agg, function($a, $b){ if ($a['yr'] !== $b['yr']) return $a['yr'] <=> $b['yr']; return $a['q'] <=> $b['q']; });
+foreach ($agg as $item) {
+    $yr = intval($item['yr']);
+    $q = intval($item['q']);
+    $cnt = intval($item['cnt']);
+    $month = 1;
+    if ($q === 1) $month = 1;
+    elseif ($q === 2) $month = 4;
+    elseif ($q === 3) $month = 7;
+    elseif ($q === 4) $month = 10;
+    $dateStr = sprintf('%04d/%02d/01', $yr, $month);
+    $loanSummaryData[] = ['x' => $dateStr, 'y' => $cnt];
 }
 
 // Prepare branch summary: categories (Branch_Name) and data (client counts)
