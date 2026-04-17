@@ -44,6 +44,9 @@ if ($stmt) {
             if ($_SESSION['userTypeId'] === 1) {
                 header('Location: admin/index.php');
                 exit;
+            } elseif ($_SESSION['userTypeId'] === 2) {
+                header('Location: staff/index.php');
+                exit;
             } else {
                 header('Location: index.php');
                 exit;

@@ -163,7 +163,7 @@ if (isset($_GET['fetch_comakers'])) {
                                         <th>Email Address</th>
                                         <th>Barangay/Town</th>
                                         <th>City/Municipality</th>
-                                        <th style="width:160px;">Action</th>
+                                        <th style="display:none">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -425,41 +425,7 @@ if (isset($_GET['fetch_comakers'])) {
                 { data: 'Email_Address' },
                 { data: 'Barangay_Town' },
                 { data: 'City_Municipality' },
-                { data: null, orderable: false, render: function(data, type, row){
-                        var id = row.id || '';
-                        var comakerid = row.Comaker_ID || '';
-                        var last = row.Last_Name || '';
-                        var first = row.First_Name || '';
-                        var middle = row.Middle_Name || '';
-                        var mobile = row.Mobile_No || '';
-                        var email = row.Email_Address || '';
-                        var barangay = row.Barangay_Town || '';
-                        var city = row.City_Municipality || '';
-                        var province = row.Province || '';
-
-                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-comaker me-1" data-bs-toggle="modal" data-bs-target="#comakerViewModal" '
-                            + 'data-id="'+id+'" data-comakerid="'+comakerid+'" data-last="'+last+'" data-first="'+first+'" data-middle="'+middle+'" '
-                            + 'data-age="'+(row.Age||'')+'" data-gender="'+(row.Gender||'')+'" data-date_of_birth="'+(row.Date_Of_Birth||'')+'" data-place_of_birth="'+(row.Place_Of_Birth||'')+'" data-civil_status="'+(row.Civil_Status||'')+'" '
-                            + 'data-mobile="'+mobile+'" data-email="'+email+'" data-house="'+(row.House_Street_Bldng||'')+'" data-barangay="'+barangay+'" data-city="'+city+'" data-province="'+province+'" data-zip_code="'+(row.Zip_Code||'')+'" '
-                            + 'data-no_of_children="'+(row.No_Of_Children||'')+'" data-id_presented="'+(row.ID_Presented||'')+'" data-id_reference_no="'+(row.ID_Reference_No||'')+'" data-income_source="'+(row.Income_Source||'')+'" data-other_income_source="'+(row.Other_Income_Source||'')+'" data-montly_income="'+(row.Montly_Income||'')+'" '
-                            + 'data-business_name="'+(row.Business_Name||'')+'" data-business_address="'+(row.Business_Address||'')+'" data-name_of_spouse="'+(row.Name_Of_Spouse||'')+'" data-primary_bank="'+(row.Primary_Bank||'')+'" data-name_of_lending="'+(row.Name_Of_Lending||'')+'" data-acquaintance_duration="'+(row.Acquaintance_Duration||'')+'" data-relationship="'+(row.Relationship||'')+'">'
-                            + '<i class="bi bi-eye"></i></button>';
-
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-comaker me-1" data-bs-toggle="modal" data-bs-target="#comakerEditModal" '
-                            + 'data-id="'+id+'" data-comakerid="'+comakerid+'" data-last="'+last+'" data-first="'+first+'" data-middle="'+middle+'" '
-                            + 'data-age="'+(row.Age||'')+'" data-gender="'+(row.Gender||'')+'" data-date_of_birth="'+(row.Date_Of_Birth||'')+'" data-place_of_birth="'+(row.Place_Of_Birth||'')+'" data-civil_status="'+(row.Civil_Status||'')+'" '
-                            + 'data-mobile="'+mobile+'" data-email="'+email+'" data-house="'+(row.House_Street_Bldng||'')+'" data-barangay="'+barangay+'" data-city="'+city+'" data-province="'+province+'" data-zip_code="'+(row.Zip_Code||'')+'" '
-                            + 'data-no_of_children="'+(row.No_Of_Children||'')+'" data-id_presented="'+(row.ID_Presented||'')+'" data-id_reference_no="'+(row.ID_Reference_No||'')+'" data-income_source="'+(row.Income_Source||'')+'" data-other_income_source="'+(row.Other_Income_Source||'')+'" data-montly_income="'+(row.Montly_Income||'')+'" '
-                            + 'data-business_name="'+(row.Business_Name||'')+'" data-business_address="'+(row.Business_Address||'')+'" data-name_of_spouse="'+(row.Name_Of_Spouse||'')+'" data-primary_bank="'+(row.Primary_Bank||'')+'" data-name_of_lending="'+(row.Name_Of_Lending||'')+'" data-acquaintance_duration="'+(row.Acquaintance_Duration||'')+'" data-relationship="'+(row.Relationship||'')+'">'
-                            + '<i class="bi bi-pencil"></i></button>';
-
-                        var deleteBtn = '<form method="post" class="d-inline delete-form">'
-                            + '<input type="hidden" name="delete_id" value="'+id+'">'
-                            + '<button type="button" class="btn btn-sm btn-danger del-comaker"><i class="bi bi-trash"></i></button>'
-                            + '</form>';
-
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + deleteBtn + '</div>';
-                    } }
+                { data: null, orderable: false, render: function(){ return ''; } }
             ]
         });
 

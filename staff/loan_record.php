@@ -142,8 +142,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                    <th>Maturity Date</th>
                                    <th>Loan Amount</th>
                                    <th>Total Amount</th>
-                                   <th>Action</th>
-                                   <th style="width:160px;">Status</th>
+                                   <th style="display:none">Action</th>
+                                   <th style="display:none">Status</th>
                                </tr>
                            </thead>
                            <tbody>
@@ -272,33 +272,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                 { data: 'Maturity_Date' },
                 { data: 'Loan_Amount', render: $.fn.dataTable.render.number( ',', '.', 2, '' ) },
                 { data: 'Total_Amount', render: $.fn.dataTable.render.number( ',', '.', 2, '' ) },
-                { data: null, orderable: false, render: function(data, type, row){
-                        var id = row.id || '';
-                        var loanid = row.Loan_ID || '';
-                        var client = ((row.Last_Name||'') + ', ' + (row.First_Name||'')).toUpperCase();
-                        var typev = (function(v){ var m={'1':'PERSONAL','2':'SALARY','3':'GROUP'}; return m[String(v)]||String(v||'').toUpperCase(); })(row.Loan_Type);
-                        var eff = (row.Effective_Date || '');
-                        var mat = (row.Maturity_Date || '');
-                        var loanAmt = row.Loan_Amount || '';
-                        var totalAmt = row.Total_Amount || '';
-                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-loan me-1" data-id="'+id+'" title="View">' + '<i class="bi bi-eye"></i></button>';
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-loan me-1" data-id="'+id+'" title="Edit">' + '<i class="bi bi-pencil"></i></button>';
-                        var delBtn = '<button type="button" class="btn btn-sm btn-danger delete-loan" data-id="'+id+'" title="Delete">' + '<i class="bi bi-trash"></i></button>';
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + delBtn + '</div>';
-                    } },
-                { data: 'Loan_Status', render: function(data, type, row){
-                        var s = (data||'').toString().trim().toUpperCase();
-                        if (!s) s = 'PENDING';
-                        var cls = 'bg-secondary';
-                        if (s === 'PENDING') cls = 'bg-warning text-dark';
-                        if (s === 'APPROVED') cls = 'bg-success';
-                        if (s === 'DENIED') cls = 'bg-danger';
-                        var badge = '<span class="badge '+cls+'">'+s+'</span>';
-                        var btns = ' <button class="btn btn-sm btn-success approve-loan" data-id="'+(row.id||'')+'" title="Approve"><i class="bi bi-check2"></i></button>'
-                                 + ' <button class="btn btn-sm btn-danger deny-loan" data-id="'+(row.id||'')+'" title="Deny">✖</button>';
-                        return badge + btns;
-                    }
-                },
+                { data: null, orderable: false, render: function(){ return ''; } },
+                { data: 'Loan_Status', render: function(){ return ''; } },
             ],
             initComplete: function(settings, json) {
                 try { $('#spinner').removeClass('show'); } catch(e){ $('#spinner').hide(); }

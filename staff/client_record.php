@@ -147,7 +147,7 @@ if (isset($_GET['fetch_clients'])) {
                                     <th>Mobile No</th>
                                     <th>Barangay/Town</th>
                                     <th>City/Municipality</th>
-                                    <th style="width:160px;">Action</th>
+                                    <th style="display:none">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -346,47 +346,7 @@ if (isset($_GET['fetch_clients'])) {
                 { data: 'Mobile_No' },
                 { data: 'Barangay_Town' },
                 { data: 'City_Municipality' },
-                { data: null, orderable: false, render: function(data, type, row){
-                        var id = row.id || '';
-                        var clientid = row.Client_ID || '';
-                        var branchid = row.Branch_ID || '';
-                        var last = row.Last_Name || '';
-                        var first = row.First_Name || '';
-                        var middle = row.Middle_Name || '';
-                        var mobile = row.Mobile_No || '';
-                        var barangay = row.Barangay_Town || '';
-                        var city = row.City_Municipality || '';
-
-                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-client me-1" data-bs-toggle="modal" data-bs-target="#clientViewModal' + '" '
-                            + 'data-id="'+id+'" '
-                            + 'data-clientid="'+clientid+'" '
-                            + 'data-branchid="'+branchid+'" '
-                            + 'data-last="'+last+'" '
-                            + 'data-first="'+first+'" '
-                            + 'data-middle="'+middle+'" '
-                            + 'data-mobile="'+mobile+'" '
-                            + 'data-barangay="'+barangay+'" '
-                            + 'data-city="'+city+'">'
-                            + '<i class="bi bi-eye"></i></button>';
-
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-client me-1" data-bs-toggle="modal" data-bs-target="#clientEditModal' + '" '
-                            + 'data-id="'+id+'" '
-                            + 'data-branchid="'+branchid+'" '
-                            + 'data-last="'+last+'" '
-                            + 'data-first="'+first+'" '
-                            + 'data-middle="'+middle+'" '
-                            + 'data-mobile="'+mobile+'" '
-                            + 'data-barangay="'+barangay+'" '
-                            + 'data-city="'+city+'">'
-                            + '<i class="bi bi-pencil"></i></button>';
-
-                        var deleteBtn = '<form method="post" class="d-inline delete-form" style="display:inline">'
-                            + '<input type="hidden" name="delete_id" value="'+id+'">'
-                            + '<button type="button" class="btn btn-sm btn-danger del-client"><i class="bi bi-trash"></i></button>'
-                            + '</form>';
-
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + deleteBtn + '</div>';
-                    } }
+                { data: null, orderable: false, render: function(){ return ''; } }
             ]
         });
 
