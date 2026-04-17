@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '../db/dbcon.php';
+include '../db/dbcon.php';
 // Fetch total users count from tbl_user
 $totalUsers = 0;
 $res = mysqli_query($conn, "SELECT COUNT(id) AS cnt FROM tbl_user");
