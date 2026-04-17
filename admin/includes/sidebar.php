@@ -63,7 +63,13 @@ if (!empty($_SESSION['userId'])) {
                             <a href="position.php" class="dropdown-item">Positions</a>
                         </div>
                     </div>
-                     <a href="comaker_info.php" class="nav-item nav-link"><i class="fa fa-user-plus me-2"></i>Comaker</a>
+                     <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-user-plus me-2"></i>Comaker</a>
+                        <div class="dropdown-menu bg-transparent border-0">
+                            <a href="comaker_info.php" class="dropdown-item">Comaker</a>
+                            <a href="comaker_record.php" class="dropdown-item"> Comaker Record</a>
+                        </div>
+                    </div>
                      <a href="interest_rate.php" class="nav-item nav-link"><i class="fa fa-percentage me-2"></i>Interest Rate</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-hand-holding-usd me-2"></i>Loans</a>
