@@ -1,6 +1,8 @@
 <?php 
 session_start();
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 include __DIR__ . '/../db/dbcon.php';
 
 // Handle delete request
@@ -150,6 +152,14 @@ if (isset($_GET['fetch_clients'])) {
     }
     /* Force table data to uppercase for visual consistency */
     .table tbody td { text-transform: uppercase; }
+    /* Make edit modal body scrollable */
+    #clientEditModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    #clientEditModal .modal-body::-webkit-scrollbar { width: 8px; }
+    #clientEditModal .modal-body::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+    #clientEditModal .modal-body::-webkit-scrollbar-track { background: #222; }
     </style>
 </head>
 
