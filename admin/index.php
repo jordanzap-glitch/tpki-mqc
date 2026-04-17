@@ -48,49 +48,7 @@ if ($res4) {
     $totalBranches = intval($r4['cnt'] ?? 0);
     mysqli_free_result($res4);
 }
-// Prepare loan summary aggregated by year and quarter
-// Prepare arrays for chart categories (date labels) and counts
-$loanCategories = [];
-$loanCounts = [];
-// Safer aggregation in PHP to avoid SQL DATE parsing errors
-$sqlSum = "SELECT Effective_Date FROM tbl_loan_info WHERE Effective_Date IS NOT NULL AND Effective_Date <> '' AND Effective_Date <> '0000-00-00'";
-$resSum = safe_query($conn, $sqlSum);
-$agg = [];
-if ($resSum) {
-    while ($row = mysqli_fetch_assoc($resSum)) {
-        $ed = trim($row['Effective_Date'] ?? '');
-        if ($ed === '') continue;
-        // try strtotime, fall back to DateTime
-        $ts = strtotime($ed);
-        if ($ts === false) {
-            try { $dt = new DateTime($ed); $ts = $dt->getTimestamp(); } catch (Exception $e) { continue; }
-        }
-        $yr = intval(date('Y', $ts));
-        $mon = intval(date('n', $ts));
-        $q = intval(floor(($mon - 1) / 3) + 1);
-        $key = sprintf('%04d-Q%d', $yr, $q);
-        if (!isset($agg[$key])) $agg[$key] = ['yr' => $yr, 'q' => $q, 'cnt' => 0];
-        $agg[$key]['cnt']++;
-    }
-    mysqli_free_result($resSum);
-}
-
-// Sort aggregated keys by year then quarter
-usort($agg, function($a, $b){ if ($a['yr'] !== $b['yr']) return $a['yr'] <=> $b['yr']; return $a['q'] <=> $b['q']; });
-foreach ($agg as $item) {
-    $yr = intval($item['yr']);
-    $q = intval($item['q']);
-    $cnt = intval($item['cnt']);
-    $month = 1;
-    if ($q === 1) $month = 1;
-    elseif ($q === 2) $month = 4;
-    elseif ($q === 3) $month = 7;
-    elseif ($q === 4) $month = 10;
-    // use YYYY-MM for category label
-    $dateStr = sprintf('%04d-%02d', $yr, $month);
-    $loanCategories[] = $dateStr;
-    $loanCounts[] = $cnt;
-}
+// Loan Summary removed — chart handled elsewhere if needed
 
 // Prepare branch summary: categories (Branch_Name) and data (client counts)
 $branchCategories = [];
@@ -107,6 +65,21 @@ if ($resB) {
         $branchData[] = intval($br['cnt'] ?? 0);
     }
     mysqli_free_result($resB);
+}
+
+// Prepare loan status counts for pie chart (APPROVED, PENDING, DENIED)
+$statusLabels = ['APPROVED','PENDING','DENIED'];
+$statusCounts = array_fill(0, count($statusLabels), 0);
+$sqlStatus = "SELECT Loan_Status, COUNT(id) AS cnt FROM tbl_loan_info GROUP BY Loan_Status";
+$resS = safe_query($conn, $sqlStatus);
+if ($resS) {
+    while ($s = mysqli_fetch_assoc($resS)) {
+        $st = strtoupper(trim($s['Loan_Status'] ?? ''));
+        $cnt = intval($s['cnt'] ?? 0);
+        $idx = array_search($st, $statusLabels, true);
+        if ($idx !== false) $statusCounts[$idx] = $cnt;
+    }
+    mysqli_free_result($resS);
 }
 ?>
 <!DOCTYPE html>
@@ -195,17 +168,17 @@ if ($resB) {
                     <div class="col-md-6">
                         <div class="bg-secondary text-center rounded p-4">
                             <div class="d-flex align-items-center justify-content-between mb-4">
-                                <h6 class="mb-0">Loan Summary</h6>
+                                <h6 class="mb-0">Client Per Branch</h6>
                             </div>
-                            <div id="chart"></div>
+                            <div id="chart_branch"></div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="bg-secondary text-center rounded p-4">
                             <div class="d-flex align-items-center justify-content-between mb-4">
-                                <h6 class="mb-0">Client Per Branch</h6>
+                                <h6 class="mb-0">Loan Status Breakdown</h6>
                             </div>
-                            <div id="chart_branch"></div>
+                            <div id="chart_status"></div>
                         </div>
                     </div>
                 </div>
@@ -274,41 +247,7 @@ if ($resB) {
     <!-- Template Javascript -->
     <script src="../js/main.js"></script>
         <script>
-                (function(){
-                                var categories = <?php echo json_encode($loanCategories); ?> || [];
-                                var counts = <?php echo json_encode($loanCounts); ?> || [];
-
-                                var options = {
-                                    series: [{
-                                        name: 'Loans',
-                                        data: counts
-                                    }],
-                                    chart: {
-                                        type: 'bar',
-                                        height: 350
-                                    },
-                                    plotOptions: {
-                                        bar: {
-                                            horizontal: false,
-                                            columnWidth: '55%',
-                                            borderRadius: 5,
-                                            borderRadiusApplication: 'end'
-                                        }
-                                    },
-                                    dataLabels: { enabled: false },
-                                    stroke: { show: true, width: 2, colors: ['transparent'] },
-                                    xaxis: { categories: categories },
-                                    yaxis: { title: { text: 'Count' } },
-                                    fill: { opacity: 1 },
-                                    tooltip: { y: { formatter: function(val){ return ''+val; } } },
-                                    title: { text: 'Loan Summary' }
-                                };
-
-                                var chartEl = document.querySelector('#chart');
-                                if (chartEl) {
-                                        var chart = new ApexCharts(chartEl, options);
-                                        chart.render();
-                                }
+            (function(){
                 // Branch summary horizontal bar
                 var branchCategories = <?php echo json_encode($branchCategories); ?> || [];
                 var branchData = <?php echo json_encode($branchData); ?> || [];
@@ -324,8 +263,35 @@ if ($resB) {
                     var chartB = new ApexCharts(chartElB, optionsBranch);
                     chartB.render();
                 }
+
+                                                // Loan status pie chart
+                                                var statusLabels = <?php echo json_encode($statusLabels); ?> || [];
+                                                var statusSeries = <?php echo json_encode($statusCounts); ?> || [];
+                                                var optionsStatus = {
+                                                    series: statusSeries,
+                                                    chart: { width: 520, height: 420, type: 'pie' },
+                                                    labels: statusLabels,
+                                                    responsive: [{
+                                                        breakpoint: 768,
+                                                        options: {
+                                                            chart: { width: 360, height: 320 },
+                                                            legend: { position: 'bottom' }
+                                                        }
+                                                    }, {
+                                                        breakpoint: 480,
+                                                        options: {
+                                                            chart: { width: 260, height: 260 },
+                                                            legend: { position: 'bottom' }
+                                                        }
+                                                    }]
+                                                };
+                                                var chartElS = document.querySelector('#chart_status');
+                                                if (chartElS) {
+                                                        var chartS = new ApexCharts(chartElS, optionsStatus);
+                                                        chartS.render();
+                                                }
             })();
-            </script>
+        </script>
     <script>
     // Populate Recent Loan Activities table using loan_record.php fetch_loans endpoint
     (function(){
