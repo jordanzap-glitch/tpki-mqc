@@ -154,7 +154,7 @@ if ($rq) {
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Interest Rate Code</label>
-                                <input type="number" name="Interest_Rate_Code" class="form-control" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" step="0.01" required>
+                                <input type="number" name="Interest_Rate_Code" class="form-control" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" step="0.001" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Interest Rate Description</label>
