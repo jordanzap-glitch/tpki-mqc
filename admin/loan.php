@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             <!-- Blank Content Start: keep layout but remove inner content -->
             <div class="container-fluid pt-4 px-4">
                 <div class="row bg-secondary rounded p-4 mx-0">
-                    <div class="col-md-8">
+                    <div class="col-12">
                         <h5 class="mb-3">Loan - Select Client</h5>
                         <?php if (!empty($success)): ?>
                             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
