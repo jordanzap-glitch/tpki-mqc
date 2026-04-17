@@ -83,15 +83,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
     $total_amount    = floatval($loan['Total_Amount'] ?? 0);
     $no_of_periods   = intval($loan['No_of_Periods'] ?? 1);
     $effective_date  = $loan['Effective_Date'] ?? null;
+    $monthly_rate    = floatval($loan['Total_Interest_Rate'] ?? 0);
 
     if ($term <= 0) { echo json_encode(['success' => false, 'msg' => 'Loan term is zero or missing.']); exit; }
     if (!$effective_date) { echo json_encode(['success' => false, 'msg' => 'Effective date missing.']); exit; }
 
-    // Compute per-period amounts
-    // Total_Amount already includes interest, so payment per period = Total_Amount / term
-    $payment_per_period   = round($total_amount / $term, 2);
+    // Diminishing balance method
+    // Fixed principal per period; interest computed on remaining principal each period
     $principal_per_period = round($loan_amount / $term, 2);
-    $interest_per_period  = round($payment_per_period - $principal_per_period, 2);
+    // Convert monthly interest rate to per-period rate
+    $rate_per_period = ($no_of_periods > 0) ? ($monthly_rate / $no_of_periods) : 0;
 
     // Generate unique alphanumeric Payment_IDs (format: P-xxxxxxxxxx)
     function genPaymentID($conn)
@@ -133,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
          Interest_Payment, Penalty, Total_Payment, Ending_Balance, Payment_Status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-    $beginning_balance = $total_amount;
+    $beginning_balance = $loan_amount;
     $currentDate = new DateTime($effective_date);
     $inserted = 0;
     $penalty = 0.0;
@@ -150,17 +151,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
         // create a unique alphanumeric Payment_ID like P-xxxxxxxxxx
         $payID = genPaymentID($conn);
 
+        // Interest on the remaining principal (diminishing)
+        $inter = round($beginning_balance * $rate_per_period, 2);
         $princ = $principal_per_period;
-        $inter = $interest_per_period;
-        $total_pay = $payment_per_period;
 
-        // Last period: absorb any rounding difference
+        // Last period: absorb any rounding difference in principal
         if ($i === $term - 1) {
-            $total_pay = round($beginning_balance, 2);
-            $princ = round($total_pay - $inter, 2);
+            $princ = round($beginning_balance, 2);
         }
 
-        $ending_balance = round($beginning_balance - $total_pay, 2);
+        $total_pay = round($princ + $inter, 2);
+        $ending_balance = round($beginning_balance - $princ, 2);
         if ($ending_balance < 0) $ending_balance = 0;
 
         mysqli_stmt_bind_param($ins, 'sssdddddds',

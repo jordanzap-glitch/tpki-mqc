@@ -617,21 +617,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             computeTotalAmount();
         }
 
-        // --- Total Amount calculation ---
-        // Formula: (No_of_Months * No_of_Periods) / Loan_Amount + Total_Interest * No_of_Periods
+        // --- Total Amount calculation (diminishing balance) ---
+        // term = No_of_Months × No_of_Periods
+        // Each period: interest on remaining principal, fixed principal repayment
         function computeTotalAmount() {
             var months = parseFloat($('#No_of_Months').val());
             var periods = parseFloat($('#No_of_Periods').val());
             var loanAmt = parseFloat($('#Loan_Amount').val());
-            var totalInt = parseFloat($('#Total_Interest').val());
-            if (isNaN(months) || isNaN(periods) || isNaN(loanAmt) || isNaN(totalInt) || loanAmt === 0) {
+            var monthlyRate = parseFloat($('#Total_Interest_Rate').val());
+            if (isNaN(months) || isNaN(periods) || isNaN(loanAmt) || isNaN(monthlyRate) || loanAmt === 0 || periods === 0) {
                 $('#Total_Amount').val('');
                 return;
             }
-            var result1 = (months * periods);
-                result2 =  loanAmt / result1;
-                result3 = (result2 + totalInt) * result1;
-            $('#Total_Amount').val(result3.toFixed(2));
+            var term = months * periods;
+            var ratePerPeriod = monthlyRate / periods;
+            var principalPerPeriod = loanAmt / term;
+            var remaining = loanAmt;
+            var totalAmount = 0;
+            var totalInterestSum = 0;
+            for (var i = 0; i < term; i++) {
+                var intThisPeriod = remaining * ratePerPeriod;
+                totalInterestSum += intThisPeriod;
+                totalAmount += principalPerPeriod + intThisPeriod;
+                remaining -= principalPerPeriod;
+                if (remaining < 0) remaining = 0;
+            }
+            $('#Total_Interest').val(totalInterestSum.toFixed(2));
+            $('#Total_Amount').val(totalAmount.toFixed(2));
             computeDivided();
         }
 
