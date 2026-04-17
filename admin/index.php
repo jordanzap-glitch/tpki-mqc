@@ -5,9 +5,18 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 include '../db/dbcon.php';
+// helper to run queries without letting mysqli_sql_exception bubble up
+function safe_query($conn, $sql) {
+    try {
+        return mysqli_query($conn, $sql);
+    } catch (mysqli_sql_exception $e) {
+        error_log('DB query failed: ' . $e->getMessage());
+        return false;
+    }
+}
 // Fetch total users count from tbl_user
 $totalUsers = 0;
-$res = mysqli_query($conn, "SELECT COUNT(id) AS cnt FROM tbl_user");
+$res = safe_query($conn, "SELECT COUNT(id) AS cnt FROM tbl_user");
 if ($res) {
     $r = mysqli_fetch_assoc($res);
     $totalUsers = intval($r['cnt'] ?? 0);
@@ -16,7 +25,7 @@ if ($res) {
 // Fetch active loans count from tbl_loan_info
 $activeLoans = 0;
 $q = "SELECT COUNT(id) AS cnt FROM tbl_loan_info WHERE Loan_Status NOT IN ('DENIED','CANCELLED','PAID')";
-$res2 = mysqli_query($conn, $q);
+$res2 = safe_query($conn, $q);
 if ($res2) {
     $r2 = mysqli_fetch_assoc($res2);
     $activeLoans = intval($r2['cnt'] ?? 0);
@@ -25,7 +34,7 @@ if ($res2) {
 // Fetch approved loans count
 $approvedLoans = 0;
 $q3 = "SELECT COUNT(id) AS cnt FROM tbl_loan_info WHERE Loan_Status = 'APPROVED'";
-$res3 = mysqli_query($conn, $q3);
+$res3 = safe_query($conn, $q3);
 if ($res3) {
     $r3 = mysqli_fetch_assoc($res3);
     $approvedLoans = intval($r3['cnt'] ?? 0);
@@ -33,7 +42,7 @@ if ($res3) {
 }
 // Fetch total branches count from tbl_branch
 $totalBranches = 0;
-$res4 = mysqli_query($conn, "SELECT COUNT(id) AS cnt FROM tbl_branch");
+$res4 = safe_query($conn, "SELECT COUNT(id) AS cnt FROM tbl_branch");
 if ($res4) {
     $r4 = mysqli_fetch_assoc($res4);
     $totalBranches = intval($r4['cnt'] ?? 0);
@@ -43,7 +52,7 @@ if ($res4) {
 $loanSummaryData = [];
 // Safer aggregation in PHP to avoid SQL DATE parsing errors
 $sqlSum = "SELECT Effective_Date FROM tbl_loan_info WHERE Effective_Date IS NOT NULL AND Effective_Date <> '' AND Effective_Date <> '0000-00-00'";
-$resSum = mysqli_query($conn, $sqlSum);
+$resSum = safe_query($conn, $sqlSum);
 $agg = [];
 if ($resSum) {
     while ($row = mysqli_fetch_assoc($resSum)) {
@@ -87,7 +96,7 @@ $sqlBranch = "SELECT b.Branch_ID, b.Branch_Name, COUNT(c.Client_ID) AS cnt
               LEFT JOIN tbl_client_info c ON c.Branch_ID = b.Branch_ID
               GROUP BY b.Branch_ID, b.Branch_Name
               ORDER BY cnt DESC";
-$resB = mysqli_query($conn, $sqlBranch);
+$resB = safe_query($conn, $sqlBranch);
 if ($resB) {
     while ($br = mysqli_fetch_assoc($resB)) {
         $branchCategories[] = $br['Branch_Name'] ?? '';
