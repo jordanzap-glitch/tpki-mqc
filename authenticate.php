@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require __DIR__ . '/db/dbcon.php';
+require __DIR__ . 'db/dbcon.php';
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
