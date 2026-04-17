@@ -1,4 +1,5 @@
 <?php
+ob_start();
 require __DIR__ . '/db/dbcon.php';
 session_start();
 
@@ -58,5 +59,5 @@ if ($stmt) {
 $_SESSION['error'] = 'Invalid email or password.';
 header('Location: index.php');
 exit;
-
+ob_end_flush();
 ?>
