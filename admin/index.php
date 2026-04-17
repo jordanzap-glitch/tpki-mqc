@@ -49,7 +49,9 @@ if ($res4) {
     mysqli_free_result($res4);
 }
 // Prepare loan summary aggregated by year and quarter
-$loanSummaryData = [];
+// Prepare arrays for chart categories (date labels) and counts
+$loanCategories = [];
+$loanCounts = [];
 // Safer aggregation in PHP to avoid SQL DATE parsing errors
 $sqlSum = "SELECT Effective_Date FROM tbl_loan_info WHERE Effective_Date IS NOT NULL AND Effective_Date <> '' AND Effective_Date <> '0000-00-00'";
 $resSum = safe_query($conn, $sqlSum);
@@ -84,8 +86,10 @@ foreach ($agg as $item) {
     elseif ($q === 2) $month = 4;
     elseif ($q === 3) $month = 7;
     elseif ($q === 4) $month = 10;
-    $dateStr = sprintf('%04d/%02d/01', $yr, $month);
-    $loanSummaryData[] = ['x' => $dateStr, 'y' => $cnt];
+    // use YYYY-MM for category label
+    $dateStr = sprintf('%04d-%02d', $yr, $month);
+    $loanCategories[] = $dateStr;
+    $loanCounts[] = $cnt;
 }
 
 // Prepare branch summary: categories (Branch_Name) and data (client counts)
@@ -270,59 +274,41 @@ if ($resB) {
     <!-- Template Javascript -->
     <script src="../js/main.js"></script>
         <script>
-        (function(){
-                var seriesData = <?php echo json_encode($loanSummaryData); ?> || [];
+                (function(){
+                                var categories = <?php echo json_encode($loanCategories); ?> || [];
+                                var counts = <?php echo json_encode($loanCounts); ?> || [];
 
-                var options = {
-                    series: [{
-                        name: 'loans',
-                        data: seriesData
-                    }],
-                    chart: {
-                        type: 'bar',
-                        height: 380
-                    },
-                    xaxis: {
-                        type: 'category',
-                        labels: {
-                            formatter: function(val) {
-                                var d = dayjs(val);
-                                var q = Math.floor(d.month()/3) + 1;
-                                return 'Q' + q;
-                            }
-                        },
-                        group: {
-                            style: {
-                                fontSize: '10px',
-                                fontWeight: 700
-                            },
-                            groups: []
-                        }
-                    },
-                    title: { text: 'Loan Summary' },
-                    tooltip: {
-                        x: { formatter: function(val){ var d = dayjs(val); var q = Math.floor(d.month()/3)+1; return 'Q'+q+' '+d.format('YYYY'); } }
-                    }
-                };
+                                var options = {
+                                    series: [{
+                                        name: 'Loans',
+                                        data: counts
+                                    }],
+                                    chart: {
+                                        type: 'bar',
+                                        height: 350
+                                    },
+                                    plotOptions: {
+                                        bar: {
+                                            horizontal: false,
+                                            columnWidth: '55%',
+                                            borderRadius: 5,
+                                            borderRadiusApplication: 'end'
+                                        }
+                                    },
+                                    dataLabels: { enabled: false },
+                                    stroke: { show: true, width: 2, colors: ['transparent'] },
+                                    xaxis: { categories: categories },
+                                    yaxis: { title: { text: 'Count' } },
+                                    fill: { opacity: 1 },
+                                    tooltip: { y: { formatter: function(val){ return ''+val; } } },
+                                    title: { text: 'Loan Summary' }
+                                };
 
-                // Build group titles by year from seriesData
-                var groups = [];
-                if (Array.isArray(seriesData) && seriesData.length) {
-                        var byYear = {};
-                        seriesData.forEach(function(pt){
-                                var d = dayjs(pt.x);
-                                var yr = d.format('YYYY');
-                                byYear[yr] = (byYear[yr] || 0) + 1;
-                        });
-                        Object.keys(byYear).sort().forEach(function(yr){ groups.push({ title: yr, cols: byYear[yr] }); });
-                        options.xaxis.group.groups = groups;
-                }
-
-                var chartEl = document.querySelector('#chart');
-                if (chartEl) {
-                        var chart = new ApexCharts(chartEl, options);
-                        chart.render();
-                }
+                                var chartEl = document.querySelector('#chart');
+                                if (chartEl) {
+                                        var chart = new ApexCharts(chartEl, options);
+                                        chart.render();
+                                }
                 // Branch summary horizontal bar
                 var branchCategories = <?php echo json_encode($branchCategories); ?> || [];
                 var branchData = <?php echo json_encode($branchData); ?> || [];
