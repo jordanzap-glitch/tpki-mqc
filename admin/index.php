@@ -41,14 +41,15 @@ if ($res4) {
 }
 // Prepare loan summary aggregated by year and quarter
 $loanSummaryData = [];
-$sqlSum = "SELECT YEAR(Effective_Date) AS yr, QUARTER(Effective_Date) AS q, COUNT(id) AS cnt
-                     FROM tbl_loan_info
-                     WHERE Effective_Date IS NOT NULL
-                         AND Effective_Date <> ''
-                         AND Effective_Date <> '0000-00-00'
-                         AND Effective_Date REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
-                     GROUP BY yr, q
-                     ORDER BY yr, q";
+$sqlSum = "SELECT YEAR(STR_TO_DATE(Effective_Date, '%Y-%m-%d')) AS yr,
+                                             QUARTER(STR_TO_DATE(Effective_Date, '%Y-%m-%d')) AS q,
+                                             COUNT(id) AS cnt
+                                         FROM tbl_loan_info
+                                         WHERE Effective_Date IS NOT NULL
+                                             AND Effective_Date <> ''
+                                             AND Effective_Date <> '0000-00-00'
+                                         GROUP BY yr, q
+                                         ORDER BY yr, q";
 $resSum = mysqli_query($conn, $sqlSum);
 if ($resSum) {
     while ($row = mysqli_fetch_assoc($resSum)) {
