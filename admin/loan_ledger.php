@@ -93,14 +93,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
     $principal_per_period = round($loan_amount / $term, 2);
     $interest_per_period  = round($payment_per_period - $principal_per_period, 2);
 
-    // Determine next Payment_ID sequence
-    $last_q = mysqli_query($conn, "SELECT Payment_ID FROM tbl_loan_ledger2 ORDER BY id DESC LIMIT 1");
-    $nextPayNum = 1;
-    if ($last_q && mysqli_num_rows($last_q) > 0) {
-        $lr = mysqli_fetch_assoc($last_q);
-        if (preg_match('/P-(\d+)/', $lr['Payment_ID'], $m)) {
-            $nextPayNum = intval($m[1]) + 1;
-        }
+    // Generate unique alphanumeric Payment_IDs (format: P-xxxxxxxxxx)
+    function genPaymentID($conn)
+    {
+        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        do {
+            $rand = '';
+            for ($j = 0; $j < 10; $j++) {
+                $rand .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $payID = 'P-' . $rand;
+
+            $chk = mysqli_prepare($conn, "SELECT COUNT(*) AS cnt FROM tbl_loan_ledger2 WHERE Payment_ID = ? LIMIT 1");
+            mysqli_stmt_bind_param($chk, 's', $payID);
+            mysqli_stmt_execute($chk);
+            $chk_res = mysqli_stmt_get_result($chk);
+            $chk_row = mysqli_fetch_assoc($chk_res);
+            mysqli_stmt_close($chk);
+        } while ($chk_row && intval($chk_row['cnt']) > 0);
+
+        return $payID;
     }
 
     // Determine payment date interval based on No_of_Periods
@@ -135,7 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
             $currentDate->modify("+{$intervalVal} months");
         }
         $payDate = $currentDate->format('Y-m-d');
-        $payID = sprintf('P-%04d', $nextPayNum++);
+        // create a unique alphanumeric Payment_ID like P-xxxxxxxxxx
+        $payID = genPaymentID($conn);
 
         $princ = $principal_per_period;
         $inter = $interest_per_period;
