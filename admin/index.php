@@ -271,6 +271,8 @@ if ($resS) {
                                                     series: statusSeries,
                                                     chart: { width: 520, height: 420, type: 'pie' },
                                                     labels: statusLabels,
+                                                    colors: ['#28a745', '#ffc107', '#dc3545'],
+                                                    legend: { position: 'bottom', horizontalAlign: 'center' },
                                                     responsive: [{
                                                         breakpoint: 768,
                                                         options: {
