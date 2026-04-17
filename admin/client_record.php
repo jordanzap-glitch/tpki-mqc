@@ -23,23 +23,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
 // Handle edit/update request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
     $eid = intval($_POST['edit_id']);
-    // collect editable fields
-    $e_branch = isset($_POST['edit_Branch_ID']) ? $_POST['edit_Branch_ID'] : null;
-    $e_last = isset($_POST['edit_Last_Name']) ? $_POST['edit_Last_Name'] : null;
-    $e_first = isset($_POST['edit_First_Name']) ? $_POST['edit_First_Name'] : null;
-    $e_middle = isset($_POST['edit_Middle_Name']) ? $_POST['edit_Middle_Name'] : null;
-    $e_nick = isset($_POST['edit_Nickname']) ? $_POST['edit_Nickname'] : null;
-    $e_mobile = isset($_POST['edit_Mobile_No']) ? $_POST['edit_Mobile_No'] : null;
-    $e_email = isset($_POST['edit_Email_Address']) ? $_POST['edit_Email_Address'] : null;
-    $e_house = isset($_POST['edit_House_Street_Bldng']) ? $_POST['edit_House_Street_Bldng'] : null;
-    $e_barangay = isset($_POST['edit_Barangay_Town']) ? $_POST['edit_Barangay_Town'] : null;
-    $e_city = isset($_POST['edit_City_Municipality']) ? $_POST['edit_City_Municipality'] : null;
-    $e_province = isset($_POST['edit_Province']) ? $_POST['edit_Province'] : null;
+    $e_branch    = $_POST['edit_Branch_ID'] ?? null;
+    $e_last      = $_POST['edit_Last_Name'] ?? null;
+    $e_first     = $_POST['edit_First_Name'] ?? null;
+    $e_middle    = $_POST['edit_Middle_Name'] ?? null;
+    $e_nick      = $_POST['edit_Nickname'] ?? null;
+    $e_age       = $_POST['edit_Age'] ?? null;
+    $e_gender    = $_POST['edit_Gender'] ?? null;
+    $e_dob       = $_POST['edit_Date_Of_Birth'] ?? null;
+    $e_pob       = $_POST['edit_Place_Of_Birth'] ?? null;
+    $e_civil     = $_POST['edit_Civil_Status'] ?? null;
+    $e_religion  = $_POST['edit_Religion'] ?? null;
+    $e_mlast     = $_POST['edit_Mother_Last_Name'] ?? null;
+    $e_mfirst    = $_POST['edit_Mother_First_Name'] ?? null;
+    $e_mmiddle   = $_POST['edit_Mother_Middle_Name'] ?? null;
+    $e_mobile    = $_POST['edit_Mobile_No'] ?? null;
+    $e_email     = $_POST['edit_Email_Address'] ?? null;
+    $e_house     = $_POST['edit_House_Street_Bldng'] ?? null;
+    $e_barangay  = $_POST['edit_Barangay_Town'] ?? null;
+    $e_city      = $_POST['edit_City_Municipality'] ?? null;
+    $e_province  = $_POST['edit_Province'] ?? null;
+    $e_zip       = $_POST['edit_Zip_Code'] ?? null;
+    $e_edu       = $_POST['edit_Educational_Attainment'] ?? null;
+    $e_children  = $_POST['edit_No_Of_Children'] ?? null;
+    $e_idpres    = $_POST['edit_ID_Presented'] ?? null;
+    $e_idref     = $_POST['edit_ID_Reference_No'] ?? null;
+    $e_splast    = $_POST['edit_Spouse_Last_Name'] ?? null;
+    $e_spfirst   = $_POST['edit_Spouse_First_Name'] ?? null;
+    $e_spmiddle  = $_POST['edit_Spouse_Middle_Name'] ?? null;
+    $e_spwork    = $_POST['edit_Spouse_Work'] ?? null;
+    $e_spnick    = $_POST['edit_Spouse_Nickname'] ?? null;
+    $e_spage     = $_POST['edit_Spouse_Age'] ?? null;
+    $e_spdob     = $_POST['edit_Spouse_DOB'] ?? null;
+    $e_spincome  = $_POST['edit_Spouse_Income'] ?? null;
+    $e_exp       = $_POST['edit_Exp_ID'] ?? null;
 
-    $update_sql = "UPDATE tbl_client_info SET Branch_ID=?, Last_Name=?, First_Name=?, Middle_Name=?, Nickname=?, Mobile_No=?, Email_Address=?, House_Street_Bldng=?, Barangay_Town=?, City_Municipality=?, Province=? WHERE id=?";
+    $update_sql = "UPDATE tbl_client_info SET
+        Branch_ID=?, Last_Name=?, First_Name=?, Middle_Name=?, Nickname=?,
+        Age=?, Gender=?, Date_Of_Birth=?, Place_Of_Birth=?, Civil_Status=?, Religion=?,
+        Mother_Last_Name=?, Mother_First_Name=?, Mother_Middle_Name=?,
+        Mobile_No=?, Email_Address=?, House_Street_Bldng=?, Barangay_Town=?, City_Municipality=?, Province=?,
+        Zip_Code=?, Educational_Attainment=?, No_Of_Children=?, ID_Presented=?, ID_Reference_No=?,
+        Spouse_Last_Name=?, Spouse_First_Name=?, Spouse_Middle_Name=?, Spouse_Work=?, Spouse_Nickname=?, Spouse_Age=?, Spouse_DOB=?, Spouse_Income=?,
+        Exp_ID=?
+        WHERE id=?";
     $ustmt = mysqli_prepare($conn, $update_sql);
     if ($ustmt) {
-        mysqli_stmt_bind_param($ustmt, 'sssssssssssi', $e_branch, $e_last, $e_first, $e_middle, $e_nick, $e_mobile, $e_email, $e_house, $e_barangay, $e_city, $e_province, $eid);
+        mysqli_stmt_bind_param($ustmt, 'ssssssssssssssssssssssssssssssssssi',
+            $e_branch, $e_last, $e_first, $e_middle, $e_nick,
+            $e_age, $e_gender, $e_dob, $e_pob, $e_civil, $e_religion,
+            $e_mlast, $e_mfirst, $e_mmiddle,
+            $e_mobile, $e_email, $e_house, $e_barangay, $e_city, $e_province,
+            $e_zip, $e_edu, $e_children, $e_idpres, $e_idref,
+            $e_splast, $e_spfirst, $e_spmiddle, $e_spwork, $e_spnick, $e_spage, $e_spdob, $e_spincome,
+            $e_exp, $eid);
         if (mysqli_stmt_execute($ustmt)) {
             $success = 'Record updated successfully.';
         } else {
@@ -54,7 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
 // Simple JSON endpoint for client-side fetching
 if (isset($_GET['fetch_clients'])) {
     $out = ['data' => []];
-    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Mobile_No, Email_Address, Date_Of_Birth, Age, Civil_Status, Barangay_Town, City_Municipality, Province FROM tbl_client_info ORDER BY id DESC";
+    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname,
+                   Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion,
+                   Mother_Last_Name, Mother_First_Name, Mother_Middle_Name,
+                   Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province,
+                   Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No,
+                   Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income,
+                   created_at, exp_id AS Exp_ID
+            FROM tbl_client_info ORDER BY id DESC";
     $res = mysqli_query($conn, $sql);
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) {
@@ -161,7 +205,7 @@ if (isset($_GET['fetch_clients'])) {
 
                         <!-- Client View Modal -->
                         <div class="modal fade" id="clientViewModal" tabindex="-1" aria-labelledby="clientViewLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                                 <div class="modal-content bg-dark text-white">
                                     <div class="modal-header">
                                         <h5 class="modal-title" id="clientViewLabel">Client Details</h5>
@@ -176,6 +220,8 @@ if (isset($_GET['fetch_clients'])) {
                                                 <div class="text-muted" id="cvBranch"></div>
                                             </div>
                                         </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2">Personal Information</h6>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <dl class="row mb-0">
@@ -185,32 +231,75 @@ if (isset($_GET['fetch_clients'])) {
                                                     <dt class="col-5 text-muted">Nickname</dt><dd class="col-7" id="cvNick"></dd>
                                                     <dt class="col-5 text-muted">Age</dt><dd class="col-7" id="cvAge"></dd>
                                                     <dt class="col-5 text-muted">Gender</dt><dd class="col-7" id="cvGender"></dd>
-                                                    <dt class="col-5 text-muted">Date of Birth</dt><dd class="col-7" id="cvDOB"></dd>
-                                                    <dt class="col-5 text-muted">Place of Birth</dt><dd class="col-7" id="cvPOB"></dd>
-                                                    <dt class="col-5 text-muted">Civil Status</dt><dd class="col-7" id="cvCivil"></dd>
-                                                    <dt class="col-5 text-muted">Religion</dt><dd class="col-7" id="cvReligion"></dd>
                                                 </dl>
                                             </div>
                                             <div class="col-md-6">
                                                 <dl class="row mb-0">
+                                                    <dt class="col-5 text-muted">Date of Birth</dt><dd class="col-7" id="cvDOB"></dd>
+                                                    <dt class="col-5 text-muted">Place of Birth</dt><dd class="col-7" id="cvPOB"></dd>
+                                                    <dt class="col-5 text-muted">Civil Status</dt><dd class="col-7" id="cvCivil"></dd>
+                                                    <dt class="col-5 text-muted">Religion</dt><dd class="col-7" id="cvReligion"></dd>
+                                                    <dt class="col-5 text-muted">Exp ID</dt><dd class="col-7" id="cvExp"></dd>
+                                                </dl>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Contact &amp; Address</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <dl class="row mb-0">
                                                     <dt class="col-5 text-muted">Mobile No</dt><dd class="col-7" id="cvMobile"></dd>
                                                     <dt class="col-5 text-muted">Email</dt><dd class="col-7" id="cvEmail"></dd>
-                                                    <dt class="col-5 text-muted">Address</dt><dd class="col-7" id="cvAddress"></dd>
+                                                </dl>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <dl class="row mb-0">
+                                                    <dt class="col-5 text-muted">House/Street/Bldng</dt><dd class="col-7" id="cvHouse"></dd>
+                                                    <dt class="col-5 text-muted">Barangay/Town</dt><dd class="col-7" id="cvBarangay"></dd>
+                                                    <dt class="col-5 text-muted">City/Municipality</dt><dd class="col-7" id="cvCity"></dd>
+                                                    <dt class="col-5 text-muted">Province</dt><dd class="col-7" id="cvProvince"></dd>
                                                     <dt class="col-5 text-muted">Zip Code</dt><dd class="col-7" id="cvZip"></dd>
+                                                </dl>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Other Details</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <dl class="row mb-0">
                                                     <dt class="col-5 text-muted">Education</dt><dd class="col-7" id="cvEdu"></dd>
                                                     <dt class="col-5 text-muted">No. of Children</dt><dd class="col-7" id="cvChildren"></dd>
+                                                </dl>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <dl class="row mb-0">
                                                     <dt class="col-5 text-muted">ID Presented</dt><dd class="col-7" id="cvIDPres"></dd>
                                                     <dt class="col-5 text-muted">ID Reference No</dt><dd class="col-7" id="cvIDRef"></dd>
                                                 </dl>
                                             </div>
                                         </div>
-                                        <hr class="border-secondary">
-                                        <h6>Spouse</h6>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Mother's Maiden Name</h6>
                                         <div class="row">
-                                            <div class="col-md-4"><div class="text-muted small">Name</div><div id="cvSpouseName"></div></div>
-                                            <div class="col-md-4"><div class="text-muted small">Work</div><div id="cvSpouseWork"></div></div>
-                                            <div class="col-md-4"><div class="text-muted small">Income</div><div id="cvSpouseIncome"></div></div>
+                                            <div class="col-md-4"><div class="text-muted small">Last Name</div><div id="cvMotherLast"></div></div>
+                                            <div class="col-md-4"><div class="text-muted small">First Name</div><div id="cvMotherFirst"></div></div>
+                                            <div class="col-md-4"><div class="text-muted small">Middle Name</div><div id="cvMotherMiddle"></div></div>
                                         </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Spouse Information</h6>
+                                        <div class="row">
+                                            <div class="col-md-4"><div class="text-muted small">Last Name</div><div id="cvSpouseLast"></div></div>
+                                            <div class="col-md-4"><div class="text-muted small">First Name</div><div id="cvSpouseFirst"></div></div>
+                                            <div class="col-md-4"><div class="text-muted small">Middle Name</div><div id="cvSpouseMiddle"></div></div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-3"><div class="text-muted small">Nickname</div><div id="cvSpouseNick"></div></div>
+                                            <div class="col-md-2"><div class="text-muted small">Age</div><div id="cvSpouseAge"></div></div>
+                                            <div class="col-md-3"><div class="text-muted small">Date of Birth</div><div id="cvSpouseDOB"></div></div>
+                                            <div class="col-md-2"><div class="text-muted small">Work</div><div id="cvSpouseWork"></div></div>
+                                            <div class="col-md-2"><div class="text-muted small">Income</div><div id="cvSpouseIncome"></div></div>
+                                        </div>
+
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
@@ -221,7 +310,7 @@ if (isset($_GET['fetch_clients'])) {
                         
                         <!-- Client Edit Modal -->
                         <div class="modal fade" id="clientEditModal" tabindex="-1" aria-labelledby="clientEditLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                                 <div class="modal-content bg-dark text-white">
                                     <div class="modal-header">
                                         <h5 class="modal-title" id="clientEditLabel">Edit Client</h5>
@@ -230,6 +319,8 @@ if (isset($_GET['fetch_clients'])) {
                                     <form method="post">
                                     <div class="modal-body">
                                         <input type="hidden" name="edit_id" id="edit_id">
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2">Personal Information</h6>
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label class="form-label">Branch</label>
@@ -248,8 +339,8 @@ if (isset($_GET['fetch_clients'])) {
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label">Nickname</label>
-                                                <input name="edit_Nickname" id="edit_Nickname" class="form-control">
+                                                <label class="form-label">Exp ID</label>
+                                                <input name="edit_Exp_ID" id="edit_Exp_ID" class="form-control" type="date">
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Last Name</label>
@@ -263,6 +354,48 @@ if (isset($_GET['fetch_clients'])) {
                                                 <label class="form-label">Middle Name</label>
                                                 <input name="edit_Middle_Name" id="edit_Middle_Name" class="form-control">
                                             </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Nickname</label>
+                                                <input name="edit_Nickname" id="edit_Nickname" class="form-control">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Age</label>
+                                                <input name="edit_Age" id="edit_Age" class="form-control" type="number">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Gender</label>
+                                                <select name="edit_Gender" id="edit_Gender" class="form-select">
+                                                    <option value="">--</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Date of Birth</label>
+                                                <input name="edit_Date_Of_Birth" id="edit_Date_Of_Birth" class="form-control" type="date">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Place of Birth</label>
+                                                <input name="edit_Place_Of_Birth" id="edit_Place_Of_Birth" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Civil Status</label>
+                                                <select name="edit_Civil_Status" id="edit_Civil_Status" class="form-select">
+                                                    <option value="">--</option>
+                                                    <option value="Single">Single</option>
+                                                    <option value="Married">Married</option>
+                                                    <option value="Widowed">Widowed</option>
+                                                    <option value="Separated">Separated</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Religion</label>
+                                                <input name="edit_Religion" id="edit_Religion" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Contact &amp; Address</h6>
+                                        <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label class="form-label">Mobile No</label>
                                                 <input name="edit_Mobile_No" id="edit_Mobile_No" class="form-control">
@@ -279,15 +412,92 @@ if (isset($_GET['fetch_clients'])) {
                                                 <label class="form-label">Barangay/Town</label>
                                                 <input name="edit_Barangay_Town" id="edit_Barangay_Town" class="form-control">
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label">City/Municipality</label>
                                                 <input name="edit_City_Municipality" id="edit_City_Municipality" class="form-control">
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label">Province</label>
                                                 <input name="edit_Province" id="edit_Province" class="form-control">
                                             </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Zip Code</label>
+                                                <input name="edit_Zip_Code" id="edit_Zip_Code" class="form-control">
+                                            </div>
                                         </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Other Details</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Education</label>
+                                                <input name="edit_Educational_Attainment" id="edit_Educational_Attainment" class="form-control">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">No. of Children</label>
+                                                <input name="edit_No_Of_Children" id="edit_No_Of_Children" class="form-control" type="number">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">ID Presented</label>
+                                                <input name="edit_ID_Presented" id="edit_ID_Presented" class="form-control">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">ID Reference No</label>
+                                                <input name="edit_ID_Reference_No" id="edit_ID_Reference_No" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Mother's Maiden Name</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Last Name</label>
+                                                <input name="edit_Mother_Last_Name" id="edit_Mother_Last_Name" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">First Name</label>
+                                                <input name="edit_Mother_First_Name" id="edit_Mother_First_Name" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Middle Name</label>
+                                                <input name="edit_Mother_Middle_Name" id="edit_Mother_Middle_Name" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Spouse Information</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Last Name</label>
+                                                <input name="edit_Spouse_Last_Name" id="edit_Spouse_Last_Name" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">First Name</label>
+                                                <input name="edit_Spouse_First_Name" id="edit_Spouse_First_Name" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Middle Name</label>
+                                                <input name="edit_Spouse_Middle_Name" id="edit_Spouse_Middle_Name" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Nickname</label>
+                                                <input name="edit_Spouse_Nickname" id="edit_Spouse_Nickname" class="form-control">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Age</label>
+                                                <input name="edit_Spouse_Age" id="edit_Spouse_Age" class="form-control">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Date of Birth</label>
+                                                <input name="edit_Spouse_DOB" id="edit_Spouse_DOB" class="form-control">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Work</label>
+                                                <input name="edit_Spouse_Work" id="edit_Spouse_Work" class="form-control">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Income</label>
+                                                <input name="edit_Spouse_Income" id="edit_Spouse_Income" class="form-control" type="number" step="0.01">
+                                            </div>
+                                        </div>
+
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -331,6 +541,9 @@ if (isset($_GET['fetch_clients'])) {
     <script src="../js/main.js"></script>
     <script>
     $(document).ready(function() {
+
+        function esc(v) { return $('<span>').text(v||'').html(); }
+
         $('#recordsTable').DataTable({
             ajax: 'client_record.php?fetch_clients=1',
             paging: true,
@@ -347,41 +560,30 @@ if (isset($_GET['fetch_clients'])) {
                 { data: 'Barangay_Town' },
                 { data: 'City_Municipality' },
                 { data: null, orderable: false, render: function(data, type, row){
-                        var id = row.id || '';
-                        var clientid = row.Client_ID || '';
-                        var branchid = row.Branch_ID || '';
-                        var last = row.Last_Name || '';
-                        var first = row.First_Name || '';
-                        var middle = row.Middle_Name || '';
-                        var mobile = row.Mobile_No || '';
-                        var barangay = row.Barangay_Town || '';
-                        var city = row.City_Municipality || '';
+                        var fields = {
+                            'id': row.id, 'clientid': row.Client_ID, 'branchid': row.Branch_ID,
+                            'last': row.Last_Name, 'first': row.First_Name, 'middle': row.Middle_Name,
+                            'nick': row.Nickname, 'age': row.Age, 'gender': row.Gender,
+                            'dob': row.Date_Of_Birth, 'pob': row.Place_Of_Birth,
+                            'civil': row.Civil_Status, 'religion': row.Religion,
+                            'mlast': row.Mother_Last_Name, 'mfirst': row.Mother_First_Name, 'mmiddle': row.Mother_Middle_Name,
+                            'mobile': row.Mobile_No, 'email': row.Email_Address,
+                            'house': row.House_Street_Bldng, 'barangay': row.Barangay_Town,
+                            'city': row.City_Municipality, 'province': row.Province,
+                            'zip': row.Zip_Code, 'edu': row.Educational_Attainment,
+                            'children': row.No_Of_Children, 'idpres': row.ID_Presented, 'idref': row.ID_Reference_No,
+                            'splast': row.Spouse_Last_Name, 'spfirst': row.Spouse_First_Name, 'spmiddle': row.Spouse_Middle_Name,
+                            'spwork': row.Spouse_Work, 'spnick': row.Spouse_Nickname, 'spage': row.Spouse_Age,
+                            'spdob': row.Spouse_DOB, 'spincome': row.Spouse_Income,
+                            'exp': row.Exp_ID
+                        };
+                        var attrs = '';
+                        for (var k in fields) { attrs += ' data-' + k + '="' + esc(fields[k]) + '"'; }
 
-                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-client me-1" data-bs-toggle="modal" data-bs-target="#clientViewModal' + '" '
-                            + 'data-id="'+id+'" '
-                            + 'data-clientid="'+clientid+'" '
-                            + 'data-branchid="'+branchid+'" '
-                            + 'data-last="'+last+'" '
-                            + 'data-first="'+first+'" '
-                            + 'data-middle="'+middle+'" '
-                            + 'data-mobile="'+mobile+'" '
-                            + 'data-barangay="'+barangay+'" '
-                            + 'data-city="'+city+'">'
-                            + '<i class="bi bi-eye"></i></button>';
-
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-client me-1" data-bs-toggle="modal" data-bs-target="#clientEditModal' + '" '
-                            + 'data-id="'+id+'" '
-                            + 'data-branchid="'+branchid+'" '
-                            + 'data-last="'+last+'" '
-                            + 'data-first="'+first+'" '
-                            + 'data-middle="'+middle+'" '
-                            + 'data-mobile="'+mobile+'" '
-                            + 'data-barangay="'+barangay+'" '
-                            + 'data-city="'+city+'">'
-                            + '<i class="bi bi-pencil"></i></button>';
-
+                        var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-client me-1" data-bs-toggle="modal" data-bs-target="#clientViewModal"' + attrs + '><i class="bi bi-eye"></i></button>';
+                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-client me-1" data-bs-toggle="modal" data-bs-target="#clientEditModal"' + attrs + '><i class="bi bi-pencil"></i></button>';
                         var deleteBtn = '<form method="post" class="d-inline delete-form" style="display:inline">'
-                            + '<input type="hidden" name="delete_id" value="'+id+'">'
+                            + '<input type="hidden" name="delete_id" value="'+esc(row.id)+'">'
                             + '<button type="button" class="btn btn-sm btn-danger del-client"><i class="bi bi-trash"></i></button>'
                             + '</form>';
 
@@ -390,66 +592,95 @@ if (isset($_GET['fetch_clients'])) {
             ]
         });
 
-        // Populate client view modal
+        // ---- Populate client VIEW modal ----
         $('#clientViewModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var modal = $(this);
+            var b = $(event.relatedTarget);
+            var m = $(this);
 
-            var prof = button.data('profpic') || '';
-            if (prof) {
-                modal.find('#clientProfPic').html('<img src="'+prof+'" style="width:96px;height:96px;object-fit:cover;">');
-            } else {
-                modal.find('#clientProfPic').html('');
-            }
+            m.find('#clientProfPic').html('');
+            var fullName = (b.data('first')||'') + ' ' + (b.data('middle')||'') + ' ' + (b.data('last')||'');
+            m.find('#cvFullName').text(fullName.trim());
+            m.find('#cvClientID').text(b.data('clientid')||'');
+            m.find('#cvBranch').text(b.data('branchid')||'');
 
-            var fullName = (button.data('first') || '') + ' ' + (button.data('middle') || '') + ' ' + (button.data('last') || '');
-            modal.find('#cvFullName').text(fullName.trim());
-            modal.find('#cvClientID').text(button.data('clientid') || '');
-            modal.find('#cvBranch').text(button.data('branchname') || button.data('branchid') || '');
+            m.find('#cvLast').text(b.data('last')||'');
+            m.find('#cvFirst').text(b.data('first')||'');
+            m.find('#cvMiddle').text(b.data('middle')||'');
+            m.find('#cvNick').text(b.data('nick')||'');
+            m.find('#cvAge').text(b.data('age')||'');
+            m.find('#cvGender').text(b.data('gender')||'');
+            m.find('#cvDOB').text(b.data('dob')||'');
+            m.find('#cvPOB').text(b.data('pob')||'');
+            m.find('#cvCivil').text(b.data('civil')||'');
+            m.find('#cvReligion').text(b.data('religion')||'');
+            m.find('#cvExp').text(b.data('exp')||'');
 
-            modal.find('#cvLast').text(button.data('last') || '');
-            modal.find('#cvFirst').text(button.data('first') || '');
-            modal.find('#cvMiddle').text(button.data('middle') || '');
-            modal.find('#cvNick').text(button.data('nick') || '');
-            modal.find('#cvAge').text(button.data('age') || '');
-            modal.find('#cvGender').text(button.data('gender') || '');
-            modal.find('#cvDOB').text(button.data('dob') || '');
-            modal.find('#cvPOB').text(button.data('pob') || '');
-            modal.find('#cvCivil').text(button.data('civil') || '');
-            modal.find('#cvReligion').text(button.data('religion') || '');
+            m.find('#cvMobile').text(b.data('mobile')||'');
+            m.find('#cvEmail').text(b.data('email')||'');
+            m.find('#cvHouse').text(b.data('house')||'');
+            m.find('#cvBarangay').text(b.data('barangay')||'');
+            m.find('#cvCity').text(b.data('city')||'');
+            m.find('#cvProvince').text(b.data('province')||'');
+            m.find('#cvZip').text(b.data('zip')||'');
 
-            modal.find('#cvMobile').text(button.data('mobile') || '');
-            modal.find('#cvEmail').text(button.data('email') || '');
-            var address = (button.data('house') || '') + '\n' + (button.data('barangay') || '') + '\n' + (button.data('city') || '') + ', ' + (button.data('province') || '');
-            modal.find('#cvAddress').text(address.replace(/(^\n|\n$)/g, ''));
-            modal.find('#cvZip').text(button.data('zip') || '');
-            modal.find('#cvEdu').text(button.data('edu') || '');
-            modal.find('#cvChildren').text(button.data('children') || '');
-            modal.find('#cvIDPres').text(button.data('idpres') || '');
-            modal.find('#cvIDRef').text(button.data('idref') || '');
+            m.find('#cvEdu').text(b.data('edu')||'');
+            m.find('#cvChildren').text(b.data('children')||'');
+            m.find('#cvIDPres').text(b.data('idpres')||'');
+            m.find('#cvIDRef').text(b.data('idref')||'');
 
-            var spouseName = (button.data('splast') || '') + ', ' + (button.data('spfirst') || '') + ' ' + (button.data('spmid') || '');
-            modal.find('#cvSpouseName').text(spouseName.trim());
-            modal.find('#cvSpouseWork').text(button.data('spwork') || '');
-            modal.find('#cvSpouseIncome').text(button.data('spincome') || '');
+            m.find('#cvMotherLast').text(b.data('mlast')||'');
+            m.find('#cvMotherFirst').text(b.data('mfirst')||'');
+            m.find('#cvMotherMiddle').text(b.data('mmiddle')||'');
+
+            m.find('#cvSpouseLast').text(b.data('splast')||'');
+            m.find('#cvSpouseFirst').text(b.data('spfirst')||'');
+            m.find('#cvSpouseMiddle').text(b.data('spmiddle')||'');
+            m.find('#cvSpouseNick').text(b.data('spnick')||'');
+            m.find('#cvSpouseAge').text(b.data('spage')||'');
+            m.find('#cvSpouseDOB').text(b.data('spdob')||'');
+            m.find('#cvSpouseWork').text(b.data('spwork')||'');
+            m.find('#cvSpouseIncome').text(b.data('spincome')||'');
         });
 
-        // Populate edit modal
+        // ---- Populate client EDIT modal ----
         $('#clientEditModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var modal = $(this);
-            modal.find('#edit_id').val(button.data('id') || '');
-            modal.find('#edit_Branch_ID').val(button.data('branchid') || '');
-            modal.find('#edit_Last_Name').val(button.data('last') || '');
-            modal.find('#edit_First_Name').val(button.data('first') || '');
-            modal.find('#edit_Middle_Name').val(button.data('middle') || '');
-            modal.find('#edit_Nickname').val(button.data('nick') || '');
-            modal.find('#edit_Mobile_No').val(button.data('mobile') || '');
-            modal.find('#edit_Email_Address').val(button.data('email') || '');
-            modal.find('#edit_House_Street_Bldng').val(button.data('house') || '');
-            modal.find('#edit_Barangay_Town').val(button.data('barangay') || '');
-            modal.find('#edit_City_Municipality').val(button.data('city') || '');
-            modal.find('#edit_Province').val(button.data('province') || '');
+            var b = $(event.relatedTarget);
+            var m = $(this);
+            m.find('#edit_id').val(b.data('id')||'');
+            m.find('#edit_Branch_ID').val(b.data('branchid')||'');
+            m.find('#edit_Exp_ID').val(b.data('exp')||'');
+            m.find('#edit_Last_Name').val(b.data('last')||'');
+            m.find('#edit_First_Name').val(b.data('first')||'');
+            m.find('#edit_Middle_Name').val(b.data('middle')||'');
+            m.find('#edit_Nickname').val(b.data('nick')||'');
+            m.find('#edit_Age').val(b.data('age')||'');
+            m.find('#edit_Gender').val(b.data('gender')||'');
+            m.find('#edit_Date_Of_Birth').val(b.data('dob')||'');
+            m.find('#edit_Place_Of_Birth').val(b.data('pob')||'');
+            m.find('#edit_Civil_Status').val(b.data('civil')||'');
+            m.find('#edit_Religion').val(b.data('religion')||'');
+            m.find('#edit_Mobile_No').val(b.data('mobile')||'');
+            m.find('#edit_Email_Address').val(b.data('email')||'');
+            m.find('#edit_House_Street_Bldng').val(b.data('house')||'');
+            m.find('#edit_Barangay_Town').val(b.data('barangay')||'');
+            m.find('#edit_City_Municipality').val(b.data('city')||'');
+            m.find('#edit_Province').val(b.data('province')||'');
+            m.find('#edit_Zip_Code').val(b.data('zip')||'');
+            m.find('#edit_Educational_Attainment').val(b.data('edu')||'');
+            m.find('#edit_No_Of_Children').val(b.data('children')||'');
+            m.find('#edit_ID_Presented').val(b.data('idpres')||'');
+            m.find('#edit_ID_Reference_No').val(b.data('idref')||'');
+            m.find('#edit_Mother_Last_Name').val(b.data('mlast')||'');
+            m.find('#edit_Mother_First_Name').val(b.data('mfirst')||'');
+            m.find('#edit_Mother_Middle_Name').val(b.data('mmiddle')||'');
+            m.find('#edit_Spouse_Last_Name').val(b.data('splast')||'');
+            m.find('#edit_Spouse_First_Name').val(b.data('spfirst')||'');
+            m.find('#edit_Spouse_Middle_Name').val(b.data('spmiddle')||'');
+            m.find('#edit_Spouse_Nickname').val(b.data('spnick')||'');
+            m.find('#edit_Spouse_Age').val(b.data('spage')||'');
+            m.find('#edit_Spouse_DOB').val(b.data('spdob')||'');
+            m.find('#edit_Spouse_Work').val(b.data('spwork')||'');
+            m.find('#edit_Spouse_Income').val(b.data('spincome')||'');
         });
 
         // Delete confirmation

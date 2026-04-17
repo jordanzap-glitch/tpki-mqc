@@ -54,6 +54,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     $total_interest = isset($_POST['Total_Interest']) && $_POST['Total_Interest'] !== '' ? floatval($_POST['Total_Interest']) : null;
     $total_amount = isset($_POST['Total_Amount']) && $_POST['Total_Amount'] !== '' ? floatval($_POST['Total_Amount']) : null;
     $fixed_amount = isset($_POST['Fixed_Amount']) && $_POST['Fixed_Amount'] !== '' ? floatval($_POST['Fixed_Amount']) : null;
+    // Handle salary proof upload (only relevant for Salary loans)
+    $salary_proof_path = null;
+    $moa_pic = null; // blob to store in tbl_loan_info.moa_pic
+    if ($loan_type === '2' && !empty($_FILES['Salary_Proof']) && $_FILES['Salary_Proof']['error'] === UPLOAD_ERR_OK) {
+        $uploadsDir = __DIR__ . '/../uploads/loan_docs';
+        if (!is_dir($uploadsDir)) @mkdir($uploadsDir, 0755, true);
+        $origName = basename($_FILES['Salary_Proof']['name']);
+        $ext = pathinfo($origName, PATHINFO_EXTENSION);
+        $safeName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', pathinfo($origName, PATHINFO_FILENAME));
+        $filename = $loan_id . '_' . time() . '_' . $safeName . '.' . $ext;
+        $dest = $uploadsDir . '/' . $filename;
+        // Save a copy on disk
+        if (move_uploaded_file($_FILES['Salary_Proof']['tmp_name'], $dest)) {
+            $salary_proof_path = 'uploads/loan_docs/' . $filename;
+            // Read file contents for DB blob
+            $moa_pic = file_get_contents($dest);
+        } else {
+            // fallback: try reading directly from tmp_name
+            $tmp = $_FILES['Salary_Proof']['tmp_name'];
+            if (is_readable($tmp)) {
+                $moa_pic = file_get_contents($tmp);
+            }
+        }
+    }
     // Force loan status to PENDING by default
     $loan_status = 'PENDING';
 
@@ -77,20 +101,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             mysqli_free_result($cnt_q);
         }
         // compute term = No_of_Periods * No_of_Months
-        $term = intval($no_of_periods) * intval($no_of_months);
+        // For Salary loans (type 2), periods 6 and 12 count as 1 (monthly payments)
+        $period_mult = intval($no_of_periods);
+        if ($loan_type === '2' && in_array($period_mult, [6, 12])) {
+            $period_mult = 1;
+        }
+        $term = $period_mult * intval($no_of_months);
 
-        $sql = "INSERT INTO tbl_loan_info (Loan_ID, Client_ID, Loan_Type, Loan_Cycle, Effective_Date, Maturity_Date, Premium, Benefit, Loan_Amount, No_of_Months, Payment_Mode, No_of_Periods, Term, Interest_Rate_ID, Total_Interest_Rate, Total_Interest, Total_Amount, Fixed_Amount, Loan_Status, Employee_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO tbl_loan_info (Loan_ID, Client_ID, Loan_Type, Loan_Cycle, Effective_Date, Maturity_Date, Premium, Benefit, Loan_Amount, No_of_Months, Payment_Mode, No_of_Periods, Term, Interest_Rate_ID, Total_Interest_Rate, Total_Interest, Total_Amount, Fixed_Amount, moa_pic, Loan_Status, Employee_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
-            $types = 'ssssssdddisiisddddss';
+            // types: s=string, d=double, i=int, b=blob
+            $types = 'ssssssdddisiisddddbss';
             mysqli_stmt_bind_param($stmt, $types,
                 $loan_id, $client_id, $loan_type, $loan_cycle, $effective_date, $maturity_date,
                 $premium, $benefit, $loan_amount, $no_of_months, $payment_mode, $no_of_periods, $term,
                 $interest_rate_id, $total_interest_rate, $total_interest, $total_amount, $fixed_amount,
-                $loan_status, $employee_id
+                $moa_pic, $loan_status, $employee_id
             );
+            // If blob present, send it via send_long_data (param index is zero-based)
+            if ($moa_pic !== null) {
+                $blob_param_index = 18; // zero-based index of moa_pic in bind list
+                mysqli_stmt_send_long_data($stmt, $blob_param_index, $moa_pic);
+            }
             if (mysqli_stmt_execute($stmt)) {
                 $success = 'Loan saved successfully.';
+                if ($salary_proof_path) {
+                    $success .= ' Salary proof uploaded.';
+                }
                     // If group loan, insert into tbl_loan_comaker
                     if ($loan_type === '3' && is_array($co_makers) && count($co_makers) > 0) {
                         $ins = mysqli_prepare($conn, "INSERT INTO tbl_loan_comaker (Loan_ID, Comaker_ID) VALUES (?, ?)");
@@ -169,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                             <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                         <?php endif; ?>
 
-                        <form id="loanForm" method="post" class="row g-2">
+                        <form id="loanForm" method="post" enctype="multipart/form-data" class="row g-2">
                             <!-- Step 1: Verify Client + Fixed Amount -->
                             <div class="form-step mb-4 pb-3 border-bottom" data-step="1">
                                 <div class="mb-3">
@@ -230,6 +268,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                                 <div class="col-md-4 mt-3">
                                     <label class="form-label">Payment Mode</label>
                                     <input name="Payment_Mode" class="form-control">
+                                </div>
+                                <div class="col-md-6 mt-3" id="salaryProofContainer" style="display:none">
+                                    <label class="form-label">Salary Proof (PDF / PNG / JPG)</label>
+                                    <input id="Salary_Proof" name="Salary_Proof" type="file" accept=".pdf,image/png,image/jpeg" class="form-control">
                                 </div>
 
                                 <div class="col-md-3 mt-3">
@@ -494,6 +536,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             var t = $(this).val();
             setInterestRateFieldsByType(t);
             populatePeriodsByType(t);
+            // show/hide salary proof upload for Salary loan (type '2')
+            if (t === '2') {
+                $('#salaryProofContainer').show();
+            } else {
+                $('#salaryProofContainer').hide();
+                $('#Salary_Proof').val('');
+            }
             // show/hide co-makers for Group loans
             if (t === '3') {
                 $('#coMakersContainer').show();
@@ -629,8 +678,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                 $('#Total_Amount').val('');
                 return;
             }
-            var term = months * periods;
-            var ratePerPeriod = monthlyRate / periods;
+            // For Salary loans, periods 6/12 count as 1 (monthly payments)
+            var loanType = $('select[name="Loan_Type"]').val();
+            var periodMult = periods;
+            if (loanType === '2' && (periods === 6 || periods === 12)) {
+                periodMult = 1;
+            }
+            var term = months * periodMult;
+            var ratePerPeriod = monthlyRate / periodMult;
             var principalPerPeriod = loanAmt / term;
             var remaining = loanAmt;
             var totalAmount = 0;

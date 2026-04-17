@@ -26,6 +26,20 @@ if (isset($_GET['get_loan'])) {
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     $row = mysqli_fetch_assoc($res);
+    // Convert moa_pic blob to base64 for JSON transport
+    if ($row && !empty($row['moa_pic'])) {
+        $blob = $row['moa_pic'];
+        $mime = 'application/octet-stream';
+        if (substr($blob, 0, 4) === "\x89PNG") $mime = 'image/png';
+        elseif (substr($blob, 0, 2) === "\xFF\xD8") $mime = 'image/jpeg';
+        elseif (substr($blob, 0, 4) === '%PDF') $mime = 'application/pdf';
+        $row['moa_pic_base64'] = 'data:' . $mime . ';base64,' . base64_encode($blob);
+        $row['moa_pic_mime'] = $mime;
+    } else {
+        $row['moa_pic_base64'] = '';
+        $row['moa_pic_mime'] = '';
+    }
+    unset($row['moa_pic']); // Don't send raw blob in JSON
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => (bool)$row, 'data' => $row]);
     exit;
@@ -58,6 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_loan'])) {
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, 'ssssssdddisisddddssi', $Loan_ID, $Client_ID, $Loan_Type, $Loan_Cycle, $Effective_Date, $Maturity_Date, $Premium, $Benefit, $Loan_Amount, $No_of_Months, $Payment_Mode, $No_of_Periods, $Interest_Rate_ID, $Total_Interest_Rate, $Total_Interest, $Total_Amount, $Fixed_Amount, $Loan_Status, $Employee_ID, $id);
     $ok = mysqli_stmt_execute($stmt);
+    // Handle moa_pic file upload (blob)
+    if ($ok && !empty($_FILES['moa_pic_file']['tmp_name']) && $_FILES['moa_pic_file']['error'] === UPLOAD_ERR_OK) {
+        $moa_data = file_get_contents($_FILES['moa_pic_file']['tmp_name']);
+        $mstmt = mysqli_prepare($conn, "UPDATE tbl_loan_info SET moa_pic = ? WHERE id = ?");
+        $null = null;
+        mysqli_stmt_bind_param($mstmt, 'bi', $null, $id);
+        mysqli_stmt_send_long_data($mstmt, 0, $moa_data);
+        mysqli_stmt_execute($mstmt);
+        mysqli_stmt_close($mstmt);
+    }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => (bool)$ok]);
     exit;
@@ -181,6 +205,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                            <div class="col-4 mt-2"><div class="text-muted small">Loan Status</div><div id="lvStatus"></div></div>
                                            <div class="col-4 mt-2"><div class="text-muted small">Employee ID</div><div id="lvEmployeeID"></div></div>
                                        </div>
+                                       <hr class="border-secondary mt-3">
+                                       <div class="text-muted small">MOA / Salary Proof</div>
+                                       <div id="lvMoaPic" class="mt-1"></div>
                                    </div>
                                    <div class="modal-footer">
                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
@@ -197,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                        <h5 class="modal-title" id="loanEditLabel">Edit Loan</h5>
                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                    </div>
-                                   <form id="loanEditForm">
+                                   <form id="loanEditForm" enctype="multipart/form-data">
                                    <div class="modal-body">
                                        <input type="hidden" id="edit_id" name="id">
                                        <div class="row g-2">
@@ -220,6 +247,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                            <div class="col-md-4 mt-2"><label class="small text-muted">Premium</label><input id="edit_Premium" name="Premium" type="number" step="0.01" class="form-control form-control-sm"></div>
                                            <div class="col-md-4 mt-2"><label class="small text-muted">Benefit</label><input id="edit_Benefit" name="Benefit" type="number" step="0.01" class="form-control form-control-sm"></div>
                                            <div class="col-md-4 mt-2"><label class="small text-muted">Loan Cycle</label><input id="edit_Loan_Cycle" name="Loan_Cycle" class="form-control form-control-sm"></div>
+                                           <div class="col-md-6 mt-2"><label class="small text-muted">MOA / Salary Proof</label><input id="edit_moa_pic_file" name="moa_pic_file" type="file" accept=".pdf,image/png,image/jpeg" class="form-control form-control-sm"><small class="text-muted">Leave empty to keep current file</small></div>
+                                           <div class="col-12 mt-2" id="edit_moa_preview"></div>
                                        </div>
                                    </div>
                                    <div class="modal-footer">
@@ -333,6 +362,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                     $('#lvFixedAmt').text((r.Fixed_Amount||'').toString());
                     $('#lvStatus').html((r.Loan_Status||'PENDING').toString().toUpperCase());
                     $('#lvEmployeeID').text((r.Employee_ID||'').toString());
+                    // Show MOA / Salary Proof
+                    var moa = r.moa_pic_base64 || '';
+                    var moaMime = r.moa_pic_mime || '';
+                    if (moa) {
+                        if (moaMime === 'application/pdf') {
+                            $('#lvMoaPic').html('<a href="'+moa+'" target="_blank" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-pdf"></i> View PDF</a>');
+                        } else {
+                            $('#lvMoaPic').html('<img src="'+moa+'" style="max-width:100%;max-height:300px;border-radius:4px;">'); 
+                        }
+                    } else {
+                        $('#lvMoaPic').html('<span class="text-muted">None</span>');
+                    }
                     $('#loanViewModal').modal('show');
                 } else {
                     Swal.fire('Error','Unable to load loan','error');
@@ -366,6 +407,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                     $('#edit_Fixed_Amount').val(r.Fixed_Amount);
                     $('#edit_Loan_Status').val(r.Loan_Status);
                     $('#edit_Employee_ID').val(r.Employee_ID);
+                    // Show current MOA preview in edit modal
+                    var eMoa = r.moa_pic_base64 || '';
+                    var eMoaMime = r.moa_pic_mime || '';
+                    if (eMoa) {
+                        if (eMoaMime === 'application/pdf') {
+                            $('#edit_moa_preview').html('<a href="'+eMoa+'" target="_blank" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-pdf"></i> Current PDF</a>');
+                        } else {
+                            $('#edit_moa_preview').html('<img src="'+eMoa+'" style="max-width:200px;max-height:150px;border-radius:4px;">'); 
+                        }
+                    } else {
+                        $('#edit_moa_preview').html('<span class="text-muted small">No file uploaded</span>');
+                    }
                     $('#loanEditModal').modal('show');
                 } else {
                     Swal.fire('Error','Unable to load loan','error');
@@ -373,20 +426,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
             }, 'json').fail(function(){ Swal.fire('Error','Server error','error'); });
         });
 
-        // Save edits
+        // Save edits (FormData for file upload support)
         $('#loanEditForm').on('submit', function(e){
             e.preventDefault();
-            var data = $(this).serializeArray();
-            data.push({name:'update_loan', value:1});
-            $.post('loan_record.php', data, function(resp){
-                if (resp && resp.success) {
-                    $('#loanEditModal').modal('hide');
-                    $('#recordsTable').DataTable().ajax.reload(null, false);
-                    Swal.fire('Saved','Loan updated','success');
-                } else {
-                    Swal.fire('Error','Unable to save','error');
-                }
-            }, 'json').fail(function(){ Swal.fire('Error','Server error','error'); });
+            var formData = new FormData(this);
+            formData.append('update_loan', 1);
+            $.ajax({
+                url: 'loan_record.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(resp){
+                    if (resp && resp.success) {
+                        $('#loanEditModal').modal('hide');
+                        $('#recordsTable').DataTable().ajax.reload(null, false);
+                        Swal.fire('Saved','Loan updated','success');
+                    } else {
+                        Swal.fire('Error','Unable to save','error');
+                    }
+                },
+                error: function(){ Swal.fire('Error','Server error','error'); }
+            });
         });
 
         // Delete

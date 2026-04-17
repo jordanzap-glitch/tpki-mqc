@@ -32,6 +32,10 @@ if (isset($_GET['get_loan_detail'])) {
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     $row = mysqli_fetch_assoc($res);
+    // Strip moa_pic BLOB to prevent json_encode failure on binary data
+    if ($row && isset($row['moa_pic'])) {
+        unset($row['moa_pic']);
+    }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => (bool)$row, 'data' => $row]);
     exit;
@@ -92,7 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_ledger'])) {
     // Fixed principal per period; interest computed on remaining principal each period
     $principal_per_period = round($loan_amount / $term, 2);
     // Convert monthly interest rate to per-period rate
-    $rate_per_period = ($no_of_periods > 0) ? ($monthly_rate / $no_of_periods) : 0;
+    // For Salary loans (type 2), periods 6/12 count as 1 (monthly payments)
+    $loan_type_val = $loan['Loan_Type'] ?? '';
+    $period_divisor = $no_of_periods;
+    if ($loan_type_val === '2' && in_array($no_of_periods, [6, 12])) {
+        $period_divisor = 1;
+    }
+    $rate_per_period = ($period_divisor > 0) ? ($monthly_rate / $period_divisor) : 0;
 
     // Generate unique alphanumeric Payment_IDs (format: P-xxxxxxxxxx)
     function genPaymentID($conn)
