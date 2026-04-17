@@ -23,7 +23,20 @@ if ($stmt) {
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if ($result && $row = mysqli_fetch_assoc($result)) {
-        if (password_verify($password, $row['Password'])) {
+        $stored = isset($row['Password']) ? $row['Password'] : '';
+        $authenticated = false;
+
+        // First try password_verify for hashed passwords
+        if (!empty($stored) && password_verify($password, $stored)) {
+            $authenticated = true;
+        }
+
+        // Fallback: allow direct match if password is stored unhashed/plaintext
+        if (!$authenticated && $password === $stored) {
+            $authenticated = true;
+        }
+
+        if ($authenticated) {
             $_SESSION['userId'] = $row['id'];
             $_SESSION['email'] = $row['Email_Address'];
             $_SESSION['userTypeId'] = (int)$row['User_Type_ID'];
