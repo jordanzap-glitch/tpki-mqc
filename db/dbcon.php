@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$database = "tkpi_db";
+$database = "tpki_db";
 $port = 3306;
 // Create connection
 $conn = mysqli_connect($servername, $username, $password, $database, $port);
