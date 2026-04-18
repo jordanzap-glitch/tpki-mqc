@@ -391,15 +391,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     body: fd,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                const data = await res.json();
-                if (data.status === 'success') {
+
+                const text = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseErr) {
+                    throw new Error('Invalid JSON response from server: ' + text);
+                }
+
+                if (data && data.status === 'success') {
                     alert(data.message || 'Saved');
                     form.reset();
                 } else {
-                    alert(data.message || 'Save failed');
+                    alert(data && data.message ? data.message : 'Save failed');
                 }
             } catch (err) {
-                alert('Network or server error');
+                console.error('Submit error:', err);
+                alert('Network or server error: ' + err.message);
             }
         });
     });
