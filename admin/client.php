@@ -13,7 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Generate Client_ID: CL-xxxxx (5 alphanumeric characters) and ensure uniqueness
     function genClientID($conn)
-    {  }
+    {
+        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        // attempt generation until unique
+        do {
+            $part = '';
+            for ($i = 0; $i < 5; $i++) {
+                $part .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $id = 'CL-' . $part;
+
+            $safe = mysqli_real_escape_string($conn, $id);
+            $q = mysqli_query($conn, "SELECT 1 FROM tbl_client_info WHERE Client_ID = '" . $safe . "' LIMIT 1");
+            $exists = $q && mysqli_num_rows($q) > 0;
+        } while ($exists);
+
+        return $id;
+    }
 
     $client_id = genClientID($conn);
 
