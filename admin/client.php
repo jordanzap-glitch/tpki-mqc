@@ -393,6 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Template Javascript -->
     <script src="../js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
@@ -417,14 +418,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if (data && data.status === 'success') {
-                    alert(data.message || 'Saved');
+                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message || 'Saved', confirmButtonText: 'OK' });
                     form.reset();
                 } else {
-                    alert(data && data.message ? data.message : 'Save failed');
+                    Swal.fire({ icon: 'error', title: 'Error', text: data && data.message ? data.message : 'Save failed', confirmButtonText: 'OK' });
                 }
             } catch (err) {
                 console.error('Submit error:', err);
-                alert('Network or server error: ' + err.message);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error: ' + err.message, confirmButtonText: 'OK' });
             }
         });
     });

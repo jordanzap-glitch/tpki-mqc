@@ -1,5 +1,7 @@
 <?php
-error_reporting (E_ALL);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 session_start();
 include '../db/dbcon.php';
 
@@ -12,23 +14,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Generate Client_ID: CL-xxxxx (5 alphanumeric characters) and ensure uniqueness
     function genClientID($conn)
     {
-        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        // attempt generation until unique
         do {
-            $rand = '';
+            $part = '';
             for ($i = 0; $i < 5; $i++) {
-                $rand .= $chars[random_int(0, strlen($chars) - 1)];
+                $part .= $chars[random_int(0, strlen($chars) - 1)];
             }
-            $cid = 'CL-' . $rand;
+            $id = 'CL-' . $part;
 
-            $chk = mysqli_prepare($conn, "SELECT COUNT(*) AS cnt FROM tbl_client_info WHERE Client_ID = ? LIMIT 1");
-            mysqli_stmt_bind_param($chk, 's', $cid);
-            mysqli_stmt_execute($chk);
-            $chk_res = mysqli_stmt_get_result($chk);
-            $chk_row = mysqli_fetch_assoc($chk_res);
-            mysqli_stmt_close($chk);
-        } while ($chk_row && intval($chk_row['cnt']) > 0);
+            $safe = mysqli_real_escape_string($conn, $id);
+            $q = mysqli_query($conn, "SELECT 1 FROM tbl_client_info WHERE Client_ID = '" . $safe . "' LIMIT 1");
+            $exists = $q && mysqli_num_rows($q) > 0;
+        } while ($exists);
 
-        return $cid;
+        return $id;
     }
 
     $client_id = genClientID($conn);
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_FILES['Prof_Pic']) && $_FILES['Prof_Pic']['error'] === UPLOAD_ERR_OK) {
         $prof_pic = file_get_contents($_FILES['Prof_Pic']['tmp_name']);
     }
-    // Expiration / extra datetime field from form
+    // Expiration / extra date field from form (date only, no time)
     $exp_id = gv('Exp_ID');
 
     // Prepared INSERT
@@ -353,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-6">
                                 <label class="form-label">Expiration Date / Extra Date</label>
-                                <input name="Exp_ID" type="datetime-local" class="form-control">
+                                <input name="Exp_ID" type="date" class="form-control">
                             </div>
 
                             <div class="col-md-6">
@@ -408,15 +408,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     body: fd,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message, confirmButtonText: 'OK' });
+
+                const text = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseErr) {
+                    throw new Error('Invalid JSON response from server: ' + text);
+                }
+
+                if (data && data.status === 'success') {
+                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message || 'Saved', confirmButtonText: 'OK' });
                     form.reset();
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Save failed', confirmButtonText: 'OK' });
+                    Swal.fire({ icon: 'error', title: 'Error', text: data && data.message ? data.message : 'Save failed', confirmButtonText: 'OK' });
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error', confirmButtonText: 'OK' });
+                console.error('Submit error:', err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error: ' + err.message, confirmButtonText: 'OK' });
             }
         });
     });
