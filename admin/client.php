@@ -13,25 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Generate Client_ID: CL-xxxxx (5 alphanumeric characters) and ensure uniqueness
     function genClientID($conn)
-    {
-        $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-        do {
-            $rand = '';
-            for ($i = 0; $i < 5; $i++) {
-                $rand .= $chars[random_int(0, strlen($chars) - 1)];
-            }
-            $cid = 'CL-' . $rand;
-
-            $chk = mysqli_prepare($conn, "SELECT COUNT(*) AS cnt FROM tbl_client_info WHERE Client_ID = ? LIMIT 1");
-            mysqli_stmt_bind_param($chk, 's', $cid);
-            mysqli_stmt_execute($chk);
-            $chk_res = mysqli_stmt_get_result($chk);
-            $chk_row = mysqli_fetch_assoc($chk_res);
-            mysqli_stmt_close($chk);
-        } while ($chk_row && intval($chk_row['cnt']) > 0);
-
-        return $cid;
-    }
+    {  }
 
     $client_id = genClientID($conn);
 
@@ -84,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_FILES['Prof_Pic']) && $_FILES['Prof_Pic']['error'] === UPLOAD_ERR_OK) {
         $prof_pic = file_get_contents($_FILES['Prof_Pic']['tmp_name']);
     }
-    // Expiration / extra datetime field from form
+    // Expiration / extra date field from form (date only, no time)
     $exp_id = gv('Exp_ID');
 
     // Prepared INSERT
@@ -355,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="col-md-6">
                                 <label class="form-label">Expiration Date / Extra Date</label>
-                                <input name="Exp_ID" type="datetime-local" class="form-control">
+                                <input name="Exp_ID" type="date" class="form-control">
                             </div>
 
                             <div class="col-md-6">
@@ -395,7 +377,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Template Javascript -->
     <script src="../js/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
@@ -412,13 +393,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message, confirmButtonText: 'OK' });
+                    alert(data.message || 'Saved');
                     form.reset();
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Save failed', confirmButtonText: 'OK' });
+                    alert(data.message || 'Save failed');
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error', confirmButtonText: 'OK' });
+                alert('Network or server error');
             }
         });
     });
