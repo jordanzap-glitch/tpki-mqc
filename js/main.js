@@ -50,7 +50,12 @@
         var active = document.documentElement.getAttribute('data-theme');
         var next = active === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
+        // Persist in localStorage (with fallback for restricted environments)
+        try { localStorage.setItem('theme', next); } catch(e) {}
+        // Persist in cookie so PHP can server-render the correct theme on next load
+        var exp = new Date();
+        exp.setFullYear(exp.getFullYear() + 1);
+        document.cookie = 'tpki_theme=' + next + ';path=/;expires=' + exp.toUTCString() + ';SameSite=Lax';
         updateThemeIcon(next);
     });
 

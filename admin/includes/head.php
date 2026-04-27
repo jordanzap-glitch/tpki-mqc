@@ -1,8 +1,18 @@
 <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
 
-    <!-- Theme early init (prevents flash of wrong theme) -->
-    <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <!-- Theme early init: PHP cookie (server-side) → localStorage → default dark -->
+    <?php
+        $tpkiTheme = 'dark';
+        if (!empty($_COOKIE['tpki_theme']) && in_array($_COOKIE['tpki_theme'], ['dark','light'], true)) {
+            $tpkiTheme = $_COOKIE['tpki_theme'];
+        }
+    ?>
+    <script>(function(){
+        var t='<?php echo $tpkiTheme; ?>';
+        try{var ls=localStorage.getItem('theme');if(ls==='light'||ls==='dark')t=ls;}catch(e){}
+        document.documentElement.setAttribute('data-theme',t);
+    })();</script>
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +28,7 @@
     <link href="../lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css" rel="stylesheet" />
 
     <!-- Customized Bootstrap Stylesheet -->
-    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/bootstrap.min.css?v=<?php echo filemtime(__DIR__.'/../../css/bootstrap.min.css'); ?>" rel="stylesheet">
 
     <!-- Template Stylesheet -->
-    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/style.css?v=<?php echo filemtime(__DIR__.'/../../css/style.css'); ?>" rel="stylesheet">
