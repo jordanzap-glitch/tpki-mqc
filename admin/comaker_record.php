@@ -124,6 +124,45 @@ if (isset($_GET['fetch_comakers'])) {
         margin: 0;
         transform: none;
     }
+    /* Enhanced visibility for inputs and search on comaker records */
+    .dataTables_wrapper .dataTables_filter input,
+    #comakersTable .form-control,
+    .modal-content .form-control {
+        background-color: rgba(255,255,255,0.04);
+        color: #ffffff;
+        border: 1px solid rgba(255,255,255,0.12);
+        padding: .35rem .6rem;
+        border-radius: .25rem;
+        transition: box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    #comakersTable .form-control:focus,
+    .modal-content .form-control:focus {
+        outline: none;
+        border-color: rgba(61,242,118,0.6);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.12);
+        background-color: rgba(255,255,255,0.06);
+        color: #ffffff;
+    }
+
+    /* Light mode overrides */
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input,
+    [data-theme="light"] #comakersTable .form-control,
+    [data-theme="light"] .modal-content .form-control {
+        background-color: #ffffff;
+        color: #212529;
+        border: 1px solid #ced4da;
+    }
+
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input:focus,
+    [data-theme="light"] #comakersTable .form-control:focus,
+    [data-theme="light"] .modal-content .form-control:focus {
+        border-color: rgba(61,242,118,0.5);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.06);
+        background-color: #ffffff;
+        color: #212529;
+    }
     </style>
 </head>
 

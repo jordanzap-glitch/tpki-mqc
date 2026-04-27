@@ -141,7 +141,7 @@ if ($resS) {
                     </div>
                     <div class="col-sm-6 col-xl-3">
                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                            <i class="fa <?php echo ($approvedLoans > 0) ? 'fa-check-circle text-success' : 'fa-coins text-primary'; ?> fa-3x"></i>
+                            <i class="fa fa-stamp fa-3x text-primary"></i>
                             <div class="ms-3">
                                 <p class="mb-2">Approved Loans</p>
                                 <h3 class="mb-0"><?php echo number_format($approvedLoans); ?></h3>

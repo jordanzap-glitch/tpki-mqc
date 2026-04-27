@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once __DIR__ . '/../db/dbcon.php';
 
@@ -253,12 +253,248 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <style>
-    .table-responsive::-webkit-scrollbar { height:12px; width:12px; }
-    .table-responsive::-webkit-scrollbar-thumb { background:#000; border-radius:6px; }
-    .table-responsive::-webkit-scrollbar-track { background:#333; }
-    .table-responsive { scrollbar-color: #000 #333; scrollbar-width: thin; }
-    .summary-label { font-size:.85rem; color:#adb5bd; }
-    .summary-value { font-size:1rem; font-weight:600; }
+        /* ── Loan Ledger Card ── */
+        .ll-card {
+            background: var(--secondary);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+        }
+        .ll-section-title {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--primary);
+            border-bottom: 1px solid rgba(61,242,118,0.2);
+            padding-bottom: .6rem;
+            margin-bottom: 1.25rem;
+        }
+        .ll-section-title i { font-size: .95rem; opacity: .85; }
+
+        /* Form controls inside ll-card */
+        .ll-card .form-label {
+            font-size: .8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: .3rem;
+            letter-spacing: .02em;
+        }
+
+        /* Page header */
+        .ll-page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.75rem;
+        }
+        .ll-page-header h5 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+        .ll-page-header p {
+            font-size: .8rem;
+            color: rgba(255,255,255,0.45);
+            margin: .15rem 0 0;
+        }
+
+        /* Summary info panels */
+        .ll-info-panel {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 8px;
+            padding: .85rem 1rem;
+            height: 100%;
+        }
+        .ll-info-label {
+            font-size: .7rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.38);
+            text-transform: uppercase;
+            letter-spacing: .09em;
+            margin-bottom: .25rem;
+        }
+        .ll-info-value {
+            font-size: .95rem;
+            font-weight: 700;
+            color: #e2e5f1;
+            word-break: break-word;
+        }
+        .ll-info-value.accent { color: var(--primary); }
+
+        /* Buttons */
+        .btn-ll-primary {
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            padding: .55rem 1.4rem;
+            letter-spacing: .04em;
+            transition: opacity .2s, transform .15s;
+        }
+        .btn-ll-primary:hover { opacity: .88; transform: translateY(-1px); color: #000; }
+
+        .btn-ll-outline {
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 8px;
+            padding: .55rem 1.4rem;
+            font-weight: 600;
+            letter-spacing: .03em;
+            transition: border-color .2s, color .2s, background .2s;
+        }
+        .btn-ll-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(61,242,118,0.06); }
+        .btn-ll-outline:disabled, .btn-ll-outline[disabled] {
+            opacity: .35; cursor: not-allowed; pointer-events: none;
+        }
+
+        .btn-ll-pay {
+            background: var(--primary);
+            color: #000;
+            font-weight: 700;
+            font-size: .75rem;
+            border: none;
+            border-radius: 6px;
+            padding: .3rem .8rem;
+            transition: opacity .2s;
+        }
+        .btn-ll-pay:hover { opacity: .82; color: #000; }
+
+        /* Select2 dark theme */
+        .select2-container--default .select2-selection--single {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            height: 42px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #e2e5f1;
+            line-height: 42px;
+            padding-left: 12px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 42px; }
+        .select2-container--default .select2-selection--single .select2-selection__placeholder { color: rgba(255,255,255,0.3); }
+        .select2-dropdown { background: #1e2a3a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+        .select2-container--default .select2-results__option { color: #e2e5f1; padding: .45rem .75rem; }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] { background: #1a7a3a; color: #fff; }
+        .select2-search--dropdown .select2-search__field {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e2e5f1;
+            border-radius: 6px;
+        }
+
+        /* DataTable overrides */
+        #ledgerTable { color: #e2e5f1; border-collapse: separate; border-spacing: 0; }
+        #ledgerTable thead th {
+            background: rgba(61,242,118,0.08);
+            color: var(--primary);
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            border-color: rgba(255,255,255,0.08) !important;
+            white-space: nowrap;
+            padding: .75rem;
+        }
+        #ledgerTable tbody td {
+            font-size: .84rem;
+            vertical-align: middle;
+            border-color: rgba(255,255,255,0.05) !important;
+            padding: .6rem .75rem;
+        }
+        #ledgerTable tbody tr:hover td { background: rgba(255,255,255,0.03); }
+
+        /* Status badges */
+        .ll-badge {
+            display: inline-block;
+            padding: .28rem .65rem;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .05em;
+        }
+        .ll-badge-pending  { background: rgba(255,193,7,0.15);  color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+        .ll-badge-paid     { background: rgba(40,167,69,0.15);  color: #28a745; border: 1px solid rgba(40,167,69,0.3); }
+        .ll-badge-overdue  { background: rgba(220,53,69,0.15);  color: #dc3545; border: 1px solid rgba(220,53,69,0.3); }
+
+        /* DataTable pagination/info */
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: var(--primary) !important;
+            color: #000 !important;
+            border-color: var(--primary) !important;
+            border-radius: 6px;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: rgba(61,242,118,0.12) !important;
+            color: var(--primary) !important;
+            border-color: transparent !important;
+            border-radius: 6px;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { color: #e2e5f1 !important; border-radius: 6px; }
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #e2e5f1;
+            border-radius: 6px;
+            padding: .25rem .5rem;
+        }
+        .dataTables_wrapper .dataTables_length label,
+        .dataTables_wrapper .dataTables_filter label,
+        .dataTables_wrapper .dataTables_info { color: rgba(255,255,255,0.45); font-size: .8rem; }
+
+        /* Scrollbar */
+        .table-responsive::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-responsive::-webkit-scrollbar-thumb { background: rgba(61,242,118,0.35); border-radius: 6px; }
+        .table-responsive::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+        .table-responsive { scrollbar-color: rgba(61,242,118,0.35) rgba(255,255,255,0.04); scrollbar-width: thin; }
+
+        /* ── Light mode overrides ── */
+        [data-theme="light"] .ll-card { background: #ffffff; border-color: #e2e8f0; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+        [data-theme="light"] .ll-card .form-label { color: #495057; }
+        [data-theme="light"] .ll-section-title { color: #1a7a3a; border-bottom-color: rgba(26,122,58,0.2); }
+        [data-theme="light"] .ll-page-header h5 { color: #1e293b; }
+        [data-theme="light"] .ll-page-header p { color: #64748b; }
+        [data-theme="light"] .ll-info-panel { background: #f8fafc; border-color: #e2e8f0; }
+        [data-theme="light"] .ll-info-label { color: #94a3b8; }
+        [data-theme="light"] .ll-info-value { color: #1e293b; }
+        [data-theme="light"] .ll-info-value.accent { color: #1a7a3a; }
+        [data-theme="light"] .btn-ll-outline { color: #64748b; border-color: #d1d9e0; }
+        [data-theme="light"] .btn-ll-outline:hover { color: #1a7a3a; border-color: #1a7a3a; background: rgba(26,122,58,0.06); }
+        [data-theme="light"] .select2-container--default .select2-selection--single { background: #f8fafc; border-color: #d1d9e0; }
+        [data-theme="light"] .select2-container--default .select2-selection--single .select2-selection__rendered { color: #212529; }
+        [data-theme="light"] .select2-dropdown { background: #ffffff; border-color: #e2e8f0; }
+        [data-theme="light"] .select2-container--default .select2-results__option { color: #212529; }
+        [data-theme="light"] .select2-search--dropdown .select2-search__field { background: #f8fafc; border-color: #d1d9e0; color: #212529; }
+        [data-theme="light"] #ledgerTable { color: #1e293b; }
+        [data-theme="light"] #ledgerTable thead th { background: rgba(26,122,58,0.07); color: #1a7a3a; border-color: #e2e8f0 !important; }
+        [data-theme="light"] #ledgerTable tbody td { border-color: #f0f4f8 !important; }
+        [data-theme="light"] #ledgerTable tbody tr:hover td { background: #f8fafc; }
+        [data-theme="light"] .ll-badge-pending  { background: rgba(255,193,7,0.12); }
+        [data-theme="light"] .ll-badge-paid     { background: rgba(40,167,69,0.12); }
+        [data-theme="light"] .ll-badge-overdue  { background: rgba(220,53,69,0.12); }
+        [data-theme="light"] .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        [data-theme="light"] .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover { background: #1a7a3a !important; color: #fff !important; border-color: #1a7a3a !important; }
+        [data-theme="light"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: rgba(26,122,58,0.1) !important; color: #1a7a3a !important; }
+        [data-theme="light"] .dataTables_wrapper .dataTables_paginate .paginate_button { color: #1e293b !important; }
+        [data-theme="light"] .dataTables_wrapper .dataTables_length select,
+        [data-theme="light"] .dataTables_wrapper .dataTables_filter input { background: #f8fafc; border-color: #d1d9e0; color: #212529; }
+        [data-theme="light"] .dataTables_wrapper .dataTables_length label,
+        [data-theme="light"] .dataTables_wrapper .dataTables_filter label,
+        [data-theme="light"] .dataTables_wrapper .dataTables_info { color: #64748b; }
+        [data-theme="light"] .table-responsive::-webkit-scrollbar-thumb { background: rgba(26,122,58,0.3); }
+        [data-theme="light"] .table-responsive { scrollbar-color: rgba(26,122,58,0.3) #f0f4f8; }
     </style>
 </head>
 
@@ -277,50 +513,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         <div class="content">
             <?php include "includes/navbar.php"; ?>
 
-            <div class="container-fluid pt-4 px-4">
-                <!-- Loan Selector -->
-                <div class="bg-secondary rounded p-4 mb-4">
-                    <h6 class="mb-3">Loan Ledger</h6>
+            <div class="container-fluid pt-4 px-4 pb-5">
+
+                <!-- Page Header -->
+                <div class="ll-page-header">
+                    <div>
+                        <h5><i class="fa fa-book-open me-2" style="color:var(--primary)"></i>Loan Ledger</h5>
+                        <p>View and manage amortization schedules for approved loans.</p>
+                    </div>
+                </div>
+
+                <!-- ── Loan Selector ── -->
+                <div class="ll-card">
+                    <div class="ll-section-title">
+                        <i class="fa fa-search"></i> Select Approved Loan
+                    </div>
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-6">
-                            <label class="form-label">Select Approved Loan</label>
+                        <div class="col-md-7">
+                            <label class="form-label">Loan</label>
                             <select id="loanSelect" class="form-select" style="width:100%">
-                                <option value="">-- Select Loan --</option>
+                                <option value="">— Select an approved loan —</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button type="button" id="btnPreview" class="btn btn-primary w-100">Preview</button>
+                        <div class="col-md-2 col-sm-6">
+                            <button type="button" id="btnPreview" class="btn btn-ll-primary w-100">
+                                <i class="fa fa-eye me-1"></i> Preview
+                            </button>
                         </div>
-                        <div class="col-md-3">
-                            <button type="button" id="btnGenerate" class="btn btn-success w-100" disabled>Generate Ledger</button>
+                        <div class="col-md-3 col-sm-6">
+                            <button type="button" id="btnGenerate" class="btn btn-ll-outline w-100" disabled>
+                                <i class="fa fa-cogs me-1"></i> Generate Ledger
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Loan Summary Card -->
-                <div id="loanSummary" class="bg-secondary rounded p-4 mb-4" style="display:none">
-                    <h6 class="mb-3">Loan Summary</h6>
-                    <div class="row g-2">
-                        <div class="col-md-3"><div class="summary-label">Loan ID</div><div class="summary-value" id="sLoanID"></div></div>
-                        <div class="col-md-3"><div class="summary-label">Client</div><div class="summary-value" id="sClient"></div></div>
-                        <div class="col-md-3"><div class="summary-label">Loan Type</div><div class="summary-value" id="sType"></div></div>
-                        <div class="col-md-3"><div class="summary-label">Loan Cycle</div><div class="summary-value" id="sCycle"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Effective Date</div><div class="summary-value" id="sEff"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Maturity Date</div><div class="summary-value" id="sMat"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Loan Amount</div><div class="summary-value" id="sLoanAmt"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Total Interest</div><div class="summary-value" id="sTotalInt"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Total Amount</div><div class="summary-value" id="sTotalAmt"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Term (Payments)</div><div class="summary-value" id="sTerm"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">No. of Periods</div><div class="summary-value" id="sPeriods"></div></div>
-                        <div class="col-md-3 mt-2"><div class="summary-label">Payment Mode</div><div class="summary-value" id="sPayMode"></div></div>
+                <!-- ── Loan Summary ── -->
+                <div id="loanSummary" class="ll-card" style="display:none">
+                    <div class="ll-section-title">
+                        <i class="fa fa-info-circle"></i> Loan Summary
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Loan ID</div>
+                                <div class="ll-info-value accent" id="sLoanID">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Client</div>
+                                <div class="ll-info-value" id="sClient">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Loan Type</div>
+                                <div class="ll-info-value" id="sType">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Loan Cycle</div>
+                                <div class="ll-info-value" id="sCycle">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Effective Date</div>
+                                <div class="ll-info-value" id="sEff">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Maturity Date</div>
+                                <div class="ll-info-value" id="sMat">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Loan Amount</div>
+                                <div class="ll-info-value accent" id="sLoanAmt">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Total Interest</div>
+                                <div class="ll-info-value" id="sTotalInt">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Total Amount</div>
+                                <div class="ll-info-value accent" id="sTotalAmt">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Term (Payments)</div>
+                                <div class="ll-info-value" id="sTerm">—</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="ll-info-panel">
+                                <div class="ll-info-label">Payment Mode</div>
+                                <div class="ll-info-value" id="sPayMode">—</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Ledger Table -->
-                <div id="ledgerSection" class="bg-secondary rounded p-4" style="display:none">
-                    <h6 class="mb-3">Amortization Schedule</h6>
+                <!-- ── Amortization Schedule ── -->
+                <div id="ledgerSection" class="ll-card" style="display:none">
+                    <div class="ll-section-title">
+                        <i class="fa fa-table"></i> Amortization Schedule
+                    </div>
                     <div class="table-responsive">
-                        <table id="ledgerTable" class="table table-striped table-bordered mb-0" style="width:100%">
+                        <table id="ledgerTable" class="table table-bordered mb-0" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -333,13 +642,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                                     <th>Total Payment</th>
                                     <th>Ending Balance</th>
                                     <th>Status</th>
-                                    <th style="width:100px;">Action</th>
+                                    <th style="width:90px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
 
             <?php include 'includes/footer.php'; ?>
@@ -368,7 +678,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         var ledgerDT = null;
 
         // Init select2
-        $('#loanSelect').select2({ placeholder:'-- Select Loan --', allowClear:true, width:'100%' });
+        $('#loanSelect').select2({ placeholder:'— Select an approved loan —', allowClear:true, width:'100%' });
 
         // Load approved loans into dropdown
         $.getJSON('loan_ledger.php', { fetch_approved_loans:1 }).done(function(res){
@@ -383,7 +693,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         }).fail(function(){ $('#spinner').removeClass('show'); });
 
         function fmt(n){
-            return parseFloat(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+            return '₱ ' + parseFloat(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
         }
 
         // ── Preview button ──
@@ -399,17 +709,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 $('#sLoanID').text(d.Loan_ID);
                 $('#sClient').text(((d.Last_Name||'')+', '+(d.First_Name||'')).toUpperCase());
                 $('#sType').text(typeMap[d.Loan_Type] || (d.Loan_Type||'').toUpperCase());
-                $('#sCycle').text(d.Loan_Cycle || '');
-                $('#sEff').text(d.Effective_Date || '');
-                $('#sMat').text(d.Maturity_Date || '');
-                $('#sLoanAmt').text('₱ ' + fmt(d.Loan_Amount));
-                $('#sTotalInt').text('₱ ' + fmt(d.Total_Interest));
-                $('#sTotalAmt').text('₱ ' + fmt(d.Total_Amount));
-                $('#sTerm').text(d.term || '');
-                $('#sPeriods').text(d.No_of_Periods || '');
-                $('#sPayMode').text((d.Payment_Mode||'').toUpperCase());
-                // Hide the No. of Periods field in the preview
-                $('#sPeriods').closest('.col-md-3').hide();
+                $('#sCycle').text(d.Loan_Cycle || '—');
+                $('#sEff').text(d.Effective_Date || '—');
+                $('#sMat').text(d.Maturity_Date || '—');
+                $('#sLoanAmt').text('₱ ' + parseFloat(d.Loan_Amount||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+                $('#sTotalInt').text('₱ ' + parseFloat(d.Total_Interest||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+                $('#sTotalAmt').text('₱ ' + parseFloat(d.Total_Amount||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+                $('#sTerm').text(d.term || '—');
+                $('#sPayMode').text((d.Payment_Mode||'—').toUpperCase());
                 $('#loanSummary').slideDown();
                 $('#btnGenerate').prop('disabled', false);
                 loadLedger(selectedLoanID);
@@ -418,9 +725,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
 
         // ── Load existing ledger rows (auto-apply penalties first) ──
         function loadLedger(loanID){
-            // First, apply penalties on overdue PENDING rows
             $.post('loan_ledger.php', { apply_penalties:1, Loan_ID: loanID }, function(){
-                // Then fetch the updated ledger
                 $.getJSON('loan_ledger.php', { fetch_ledger: loanID }).done(function(resp){
                     var rows = (resp && resp.data) ? resp.data : [];
                     $('#ledgerSection').show();
@@ -437,35 +742,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                             destroy: true,
                             columns: [
                                 { data: null, render: function(d,t,r,meta){ return meta.row + 1; } },
-                                { data: 'Payment_ID' },
+                                { data: 'Payment_ID', render: function(d){ return '<span style="font-family:monospace;font-size:.78rem">'+d+'</span>'; } },
                                 { data: 'Payment_Date' },
                                 { data: 'Beginning_Balance', render: function(d){ return fmt(d); } },
-                                { data: 'Principal_Payment', render: function(d){ return fmt(d); } },
-                                { data: 'Interest_Payment', render: function(d){ return fmt(d); } },
-                                { data: 'Penalty', render: function(d){ return fmt(d); } },
-                                { data: 'Total_Payment', render: function(d){ return fmt(d); } },
-                                { data: 'Ending_Balance', render: function(d){ return fmt(d); } },
+                                { data: 'Principal_Payment',  render: function(d){ return fmt(d); } },
+                                { data: 'Interest_Payment',   render: function(d){ return fmt(d); } },
+                                { data: 'Penalty',            render: function(d){ return parseFloat(d||0) > 0 ? '<span style="color:#dc3545;font-weight:700">'+fmt(d)+'</span>' : fmt(d); } },
+                                { data: 'Total_Payment',      render: function(d){ return '<strong>'+fmt(d)+'</strong>'; } },
+                                { data: 'Ending_Balance',     render: function(d){ return fmt(d); } },
                                 { data: 'Payment_Status', render: function(d){
                                     var s = (d||'').toUpperCase();
-                                    var cls = 'bg-secondary';
-                                    if (s === 'PENDING') cls = 'bg-warning text-dark';
-                                    if (s === 'POSTED') cls = 'bg-success';
-                                    if (s === 'PAID') cls = 'bg-success';
-                                    return '<span class="badge '+cls+'">'+s+'</span>';
+                                    var cls = 'll-badge ';
+                                    if (s === 'PENDING') cls += 'll-badge-pending';
+                                    else if (s === 'PAID' || s === 'POSTED') cls += 'll-badge-paid';
+                                    else cls += 'll-badge-overdue';
+                                    return '<span class="'+cls+'">'+s+'</span>';
                                 }},
                                 { data: null, orderable: false, render: function(d){
                                     var s = (d.Payment_Status||'').toUpperCase();
                                     if (s === 'PENDING') {
-                                        return '<button class="btn btn-sm btn-success btn-approve" data-id="'+d.id+'" title="Approve Payment">✓ Pay</button>';
+                                        return '<button class="btn-ll-pay btn-approve" data-id="'+d.id+'" title="Mark as Paid"><i class="fa fa-check me-1"></i>Pay</button>';
                                     }
-                                    return '<span class="text-muted">—</span>';
+                                    return '<span style="color:rgba(255,255,255,0.25);font-size:.8rem">—</span>';
                                 }}
                             ]
                         });
                     } else {
                         $('#btnGenerate').prop('disabled', false);
                         $('#ledgerTable tbody').html(
-                            '<tr><td colspan="11" class="text-center">No ledger entries yet. Click "Generate Ledger" to create the amortization schedule.</td></tr>'
+                            '<tr><td colspan="11" class="text-center" style="padding:2rem;color:rgba(255,255,255,0.4)"><i class="fa fa-info-circle me-2"></i>No ledger entries yet. Click <strong>Generate Ledger</strong> to create the amortization schedule.</td></tr>'
                         );
                     }
                 });
@@ -481,12 +786,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 text: 'Mark this payment as PAID?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Approve'
+                confirmButtonText: 'Approve',
+                confirmButtonColor: '#1a7a3a'
             }).then(function(result){
                 if (!result.isConfirmed) return;
                 $.post('loan_ledger.php', { approve_payment:1, id: payId }, function(resp){
                     if (resp && resp.success) {
-                        Swal.fire('Approved', 'Payment marked as PAID.', 'success');
+                        Swal.fire({ icon:'success', title:'Approved', text:'Payment marked as PAID.', confirmButtonColor:'#1a7a3a' });
                         loadLedger(selectedLoanID);
                     } else {
                         Swal.fire('Error', resp.msg || 'Approval failed', 'error');
@@ -503,12 +809,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 text: 'This will create the full amortization schedule for ' + selectedLoanID + '. This cannot be undone.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Generate'
+                confirmButtonText: 'Generate',
+                confirmButtonColor: '#1a7a3a'
             }).then(function(result){
                 if (!result.isConfirmed) return;
                 $.post('loan_ledger.php', { generate_ledger:1, Loan_ID: selectedLoanID }, function(resp){
                     if (resp && resp.success) {
-                        Swal.fire('Generated', resp.rows + ' payment rows created.', 'success');
+                        Swal.fire({ icon:'success', title:'Generated', text: resp.rows + ' payment rows created.', confirmButtonColor:'#1a7a3a' });
                         loadLedger(selectedLoanID);
                     } else {
                         Swal.fire('Error', resp.msg || 'Generation failed', 'error');

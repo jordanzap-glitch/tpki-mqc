@@ -361,3 +361,275 @@ a:hover, a:focus {
     max-width: 320px;
     margin: 0 auto;
 }
+
+
+/* ===== Light Mode ===== */
+[data-theme="light"] {
+    --secondary: #ffffff;
+    --dark: #f0f2f5;
+    --light: #495057;
+}
+
+[data-theme="light"] body {
+    background-color: #f0f2f5;
+    color: #212529;
+}
+
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, #1a7a3a 0%, #3df276 100%);
+}
+
+[data-theme="light"] .content {
+    background: #f0f2f5;
+}
+
+/* Navbars */
+[data-theme="light"] .sidebar .navbar {
+    background: transparent !important;
+}
+[data-theme="light"] .content nav.navbar.bg-secondary {
+    background-color: #ffffff !important;
+}
+
+/* Sidebar nav links */
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link {
+    color: #ffffff;
+    border-left-color: transparent;
+}
+
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link:hover,
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link.active {
+    color: #FFD700 !important;
+    background: rgba(0, 0, 0, 0.15);
+    border-color: #FFD700;
+}
+
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link i {
+    background: rgba(0, 0, 0, 0.15);
+    color: #ffffff;
+}
+
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link:hover i,
+[data-theme="light"] .sidebar .navbar .navbar-nav .nav-link.active i {
+    background: rgba(0, 0, 0, 0.25);
+    color: #FFD700 !important;
+}
+
+/* Sidebar dropdown items */
+[data-theme="light"] .sidebar .navbar .dropdown-item {
+    color: #ffffff;
+}
+
+[data-theme="light"] .sidebar .navbar .dropdown-item:hover,
+[data-theme="light"] .sidebar .navbar .dropdown-item.active {
+    background: #145a32 !important;
+    color: #FFD700 !important;
+}
+
+/* Content navbar links */
+[data-theme="light"] .content .navbar .navbar-nav .nav-link {
+    color: #495057;
+}
+
+[data-theme="light"] .content .navbar .navbar-nav .nav-link:hover,
+[data-theme="light"] .content .navbar .navbar-nav .nav-link.active {
+    color: var(--primary);
+}
+
+[data-theme="light"] .content .navbar .sidebar-toggler,
+[data-theme="light"] .content .navbar .navbar-nav .nav-link i {
+    background: #f0f2f5;
+    color: #495057;
+}
+
+[data-theme="light"] .content .navbar .dropdown-item {
+    color: #495057;
+}
+
+[data-theme="light"] .content .navbar .dropdown-item:hover,
+[data-theme="light"] .content .navbar .dropdown-item.active {
+    background: #f0f2f5;
+}
+
+/* Override .navbar-dark text color — sidebar keeps white (on gradient), top navbar goes dark */
+[data-theme="light"] .sidebar .navbar-dark .navbar-nav .nav-link,
+[data-theme="light"] .sidebar .navbar-dark .navbar-brand,
+[data-theme="light"] .sidebar .navbar-dark span,
+[data-theme="light"] .sidebar .navbar-dark h6 {
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .content .navbar-dark .navbar-nav .nav-link,
+[data-theme="light"] .content .navbar-dark .navbar-brand {
+    color: #495057 !important;
+}
+
+/* Dropdown menus */
+[data-theme="light"] .dropdown-menu.bg-secondary {
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+[data-theme="light"] .dropdown-menu .dropdown-item {
+    color: #212529 !important;
+}
+
+[data-theme="light"] .dropdown-menu .dropdown-item:hover {
+    background-color: #f0f2f5 !important;
+}
+
+/* bg-secondary containers (stat cards, chart boxes, table wrappers, form sections) */
+[data-theme="light"] .bg-secondary {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .bg-secondary p,
+[data-theme="light"] .bg-secondary h1,
+[data-theme="light"] .bg-secondary h2,
+[data-theme="light"] .bg-secondary h3,
+[data-theme="light"] .bg-secondary h4,
+[data-theme="light"] .bg-secondary h5,
+[data-theme="light"] .bg-secondary h6,
+[data-theme="light"] .bg-secondary label,
+[data-theme="light"] .bg-secondary span:not(.badge),
+[data-theme="light"] .bg-secondary small {
+    color: #212529 !important;
+}
+
+/* bg-dark containers (modals, inline-styled dark divs) — keep spinner dark */
+[data-theme="light"] .bg-dark:not(#spinner) {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .modal-content.bg-dark,
+[data-theme="light"] .modal-content.text-white {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-body,
+[data-theme="light"] .modal-footer {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+/* Cards (Bootstrap .card class) */
+[data-theme="light"] .card {
+    background-color: #ffffff !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .card.bg-secondary,
+[data-theme="light"] .card.bg-dark {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .card-header {
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .card-body {
+    color: #212529 !important;
+}
+
+/* text-white overrides inside content area (table headers, card text) */
+[data-theme="light"] .content tr.text-white th,
+[data-theme="light"] .content tr.text-white td,
+[data-theme="light"] .bg-secondary .text-white,
+[data-theme="light"] .bg-dark:not(#spinner) .text-white,
+[data-theme="light"] .card.bg-secondary .text-white,
+[data-theme="light"] .card.bg-dark .text-white {
+    color: #212529 !important;
+}
+
+/* Inline style overrides for modals that use style="background-color:#000; color:#fff;" */
+[data-theme="light"] .modal-content {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+/* Tables */
+[data-theme="light"] .table {
+    color: #212529 !important;
+    border-color: #dee2e6 !important;
+}
+
+[data-theme="light"] .table > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: #212529 !important;
+    border-color: #dee2e6 !important;
+}
+
+[data-theme="light"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(0,0,0,.03) !important;
+}
+
+/* Form controls */
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border-color: #ced4da !important;
+}
+
+[data-theme="light"] .form-control::placeholder,
+[data-theme="light"] .form-select::placeholder {
+    color: #6c757d !important;
+}
+
+[data-theme="light"] .input-group-text {
+    background-color: #e9ecef !important;
+    color: #212529 !important;
+    border-color: #ced4da !important;
+}
+
+/* Modals */
+[data-theme="light"] .modal-content {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-footer {
+    border-color: #dee2e6 !important;
+}
+
+/* Headings */
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
+[data-theme="light"] h4, [data-theme="light"] h5, [data-theme="light"] h6 {
+    color: #212529;
+}
+
+/* DataTables */
+[data-theme="light"] .dataTables_wrapper {
+    color: #212529 !important;
+}
+
+[data-theme="light"] .dataTables_wrapper .dataTables_filter input,
+[data-theme="light"] .dataTables_wrapper .dataTables_length select {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border-color: #ced4da !important;
+}
+
+[data-theme="light"] .dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #212529 !important;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+    border: none;
+    cursor: pointer;
+    transition: opacity .3s;
+}
+
+#theme-toggle:hover {
+    opacity: 0.75;
+}

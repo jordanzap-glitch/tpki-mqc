@@ -1,5 +1,8 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 require_once __DIR__ . '/../db/dbcon.php';
 
 $success = '';
@@ -165,11 +168,155 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
 
     <?php include "includes/head.php"; ?>
     <style>
-    /* Make readonly inputs darker for better readability */
-    .form-control[readonly] {
-        color: #212529 !important;
-        opacity: 1 !important;
+    /* ── Loan Form Cards ── */
+    .lf-card {
+        background: var(--secondary);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 1.75rem 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     }
+    .lf-section-title {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--primary);
+        border-bottom: 1px solid rgba(61,242,118,0.2);
+        padding-bottom: .6rem;
+        margin-bottom: 1.25rem;
+    }
+    .lf-step-badge {
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        background: rgba(61,242,118,0.15);
+        border: 1.5px solid var(--primary);
+        color: var(--primary);
+        font-size: .75rem; font-weight: 700;
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .lf-card .form-control,
+    .lf-card .form-select {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #e2e5f1;
+        border-radius: 8px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    .lf-card .form-control:focus,
+    .lf-card .form-select:focus {
+        background: rgba(255,255,255,0.08);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(61,242,118,0.12);
+        color: #fff;
+    }
+    .lf-card .form-control[readonly] {
+        background: rgba(255,255,255,0.03);
+        color: rgba(255,255,255,0.5);
+        cursor: default;
+    }
+    .lf-card .form-control::placeholder { color: rgba(255,255,255,0.3); }
+    .lf-card .form-label {
+        font-size: .8rem; font-weight: 600;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: .3rem; letter-spacing: .02em;
+    }
+    /* Client detail card */
+    .lf-client-detail {
+        background: rgba(61,242,118,0.04);
+        border: 1px solid rgba(61,242,118,0.18);
+        border-radius: 10px;
+        padding: 1.1rem 1.4rem;
+    }
+    .lf-client-detail .lf-detail-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+        gap: .55rem .75rem;
+        margin-top: .75rem;
+    }
+    .lf-client-detail .lf-detail-item label {
+        display: block; font-size: .72rem; font-weight: 600;
+        color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: .06em;
+        margin-bottom: .1rem;
+    }
+    .lf-client-detail .lf-detail-item span {
+        font-size: .88rem; color: #e2e5f1; font-weight: 500;
+    }
+    /* Computed fields highlight */
+    .lf-computed {
+        background: rgba(61,242,118,0.07) !important;
+        border-color: rgba(61,242,118,0.25) !important;
+        color: var(--primary) !important;
+        font-weight: 600;
+    }
+    /* Page header */
+    .lf-page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.75rem; }
+    .lf-page-header h5 { font-size:1.15rem; font-weight:700; color:#fff; margin:0; }
+    .lf-page-header p { font-size:.8rem; color:rgba(255,255,255,0.45); margin:.15rem 0 0; }
+    /* Action bar */
+    .lf-action-bar {
+        display:flex; align-items:center; justify-content:flex-end; gap:.75rem;
+        padding-top:1rem; border-top:1px solid rgba(255,255,255,0.07); margin-top:.5rem;
+    }
+    .btn-lf-primary {
+        background: var(--primary); color:#000; font-weight:700;
+        border:none; border-radius:8px; padding:.55rem 1.6rem;
+        letter-spacing:.04em; transition:opacity .2s, transform .15s;
+    }
+    .btn-lf-primary:hover { opacity:.88; transform:translateY(-1px); color:#000; }
+    .btn-lf-outline {
+        background:transparent; color:rgba(255,255,255,0.55);
+        border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:.55rem 1.2rem;
+        transition:border-color .2s, color .2s;
+    }
+    .btn-lf-outline:hover { border-color:rgba(255,255,255,0.4); color:#fff; }
+    /* Verify button */
+    .btn-lf-verify {
+        background: rgba(61,242,118,0.15);
+        border: 1px solid rgba(61,242,118,0.4);
+        color: var(--primary); font-weight:600; border-radius:8px;
+        padding:.5rem 1.25rem; transition:background .2s, color .2s;
+        white-space:nowrap;
+    }
+    .btn-lf-verify:hover { background:var(--primary); color:#000; }
+
+    /* ── Light mode ── */
+    [data-theme="light"] .lf-card {
+        background: #fff; border-color: #e2e8f0;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    [data-theme="light"] .lf-card .form-control,
+    [data-theme="light"] .lf-card .form-select {
+        background: #f8fafc; border-color: #d1d9e0; color: #212529;
+    }
+    [data-theme="light"] .lf-card .form-control:focus,
+    [data-theme="light"] .lf-card .form-select:focus {
+        background:#fff; border-color:#1a7a3a;
+        box-shadow:0 0 0 3px rgba(26,122,58,0.1); color:#212529;
+    }
+    [data-theme="light"] .lf-card .form-control[readonly] {
+        background:#f1f5f9; color:#6c757d;
+    }
+    [data-theme="light"] .lf-card .form-control::placeholder { color:#adb5bd; }
+    [data-theme="light"] .lf-card .form-label { color:#495057; }
+    [data-theme="light"] .lf-section-title { color:#1a7a3a; border-bottom-color:rgba(26,122,58,0.2); }
+    [data-theme="light"] .lf-step-badge { background:rgba(26,122,58,0.1); border-color:#1a7a3a; color:#1a7a3a; }
+    [data-theme="light"] .lf-client-detail { background:rgba(26,122,58,0.04); border-color:rgba(26,122,58,0.18); }
+    [data-theme="light"] .lf-client-detail .lf-detail-item label { color:#64748b; }
+    [data-theme="light"] .lf-client-detail .lf-detail-item span { color:#1e293b; }
+    [data-theme="light"] .lf-computed { background:rgba(26,122,58,0.07) !important; border-color:rgba(26,122,58,0.3) !important; color:#1a7a3a !important; }
+    [data-theme="light"] .lf-page-header h5 { color:#1e293b; }
+    [data-theme="light"] .lf-page-header p { color:#64748b; }
+    [data-theme="light"] .lf-action-bar { border-top-color:#e2e8f0; }
+    [data-theme="light"] .btn-lf-outline { color:#64748b; border-color:#d1d9e0; }
+    [data-theme="light"] .btn-lf-outline:hover { color:#1e293b; border-color:#94a3b8; }
+    [data-theme="light"] .btn-lf-verify { background:rgba(26,122,58,0.08); border-color:rgba(26,122,58,0.35); color:#1a7a3a; }
+    [data-theme="light"] #step4Note { color:#64748b; }
     </style>
 </head>
 
@@ -196,172 +343,176 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             <!-- Navbar End -->
 
 
-            <!-- Blank Content Start: keep layout but remove inner content -->
-            <div class="container-fluid pt-4 px-4">
-                <div class="row bg-secondary rounded p-4 mx-0">
-                    <div class="col-12">
-                        <h5 class="mb-3">Loan - Select Client</h5>
-                        <?php if (!empty($success)): ?>
-                            <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-                        <?php elseif (!empty($error)): ?>
-                            <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-                        <?php endif; ?>
+            <!-- Loan Form -->
+            <div class="container-fluid pt-4 px-4 pb-5">
 
-                        <form id="loanForm" method="post" enctype="multipart/form-data" class="row g-2">
-                            <!-- Step 1: Verify Client + Fixed Amount -->
-                            <div class="form-step mb-4 pb-3 border-bottom" data-step="1">
-                                <div class="mb-3">
-                                    <h6 class="mb-1"><strong>Step 1 — Verify Client</strong></h6>
-                                    <div class="small text-muted mb-2">Select and verify the client. Fixed amount will be populated after verification.</div>
-                                </div>
-                                <div class="col-md-9">
-                                    <label class="form-label">Client</label>
-                                    <select id="loan_client" name="Client_ID" class="form-select" style="width:100%"></select>
-                                </div>
-                                <div class="col-md-3 d-flex align-items-end">
-                                    <button type="button" id="verifyClient" class="btn btn-primary w-100">Verify</button>
-                                </div>
-
-                                <!-- Client details -->
-                                <div class="col-12">
-                                    <div id="clientDetails" class="card bg-dark text-white mt-3" style="display:none">
-                                        <div class="card-body">
-                                            <h6 class="card-title">Client Details</h6>
-                                            <div class="row">
-                                                <div class="col-md-6"><strong>Client ID:</strong> <div id="dClientID"></div></div>
-                                                <div class="col-md-6"><strong>Name:</strong> <div id="dName"></div></div>
-                                                <div class="col-md-6"><strong>Date of Birth:</strong> <div id="dDOB"></div></div>
-                                                <div class="col-md-6"><strong>Age:</strong> <div id="dAge"></div></div>
-                                                <div class="col-md-6"><strong>Civil Status:</strong> <div id="dCivilStatus"></div></div>
-                                                <div class="col-md-6"><strong>City/Municipality:</strong> <div id="dCity"></div></div>
-                                                <div class="col-md-6"><strong>Province:</strong> <div id="dProvince"></div></div>
-                                                <div class="col-md-6"><strong>Email:</strong> <div id="dEmail"></div></div>
-                                                <div class="col-md-6"><strong>Mobile No:</strong> <div id="dMobile"></div></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Fixed Amount</label>
-                                    <input id="Fixed_Amount" type="number" step="0.01" name="Fixed_Amount" class="form-control" readonly>
-                                </div>
-
-                                <!-- Step 1 end -->
-                            </div>
-
-                            <!-- Step 2: Loan basic inputs -->
-                            <div class="form-step mb-4 pb-3 border-bottom" data-step="2">
-                                <div class="mb-3">
-                                    <h6 class="mb-1"><strong>Step 2 — Loan Details</strong></h6>
-                                    <div class="small text-muted mb-2">Enter loan amount, dates, duration and payment details.</div>
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Loan Type</label>
-                                    <select name="Loan_Type" class="form-select">
-                                        <option value="">-- Select Type --</option>
-                                        <option value="1">Personal</option>
-                                        <option value="2">Salary</option>
-                                        <option value="3">Group</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Payment Mode</label>
-                                    <input name="Payment_Mode" class="form-control">
-                                </div>
-                                <div class="col-md-6 mt-3" id="salaryProofContainer" style="display:none">
-                                    <label class="form-label">Salary Proof (PDF / PNG / JPG)</label>
-                                    <input id="Salary_Proof" name="Salary_Proof" type="file" accept=".pdf,image/png,image/jpeg" class="form-control">
-                                </div>
-
-                                <div class="col-md-3 mt-3">
-                                    <label class="form-label">Effective Date</label>
-                                    <input id="Effective_Date" type="date" name="Effective_Date" class="form-control">
-                                </div>
-                                <div class="col-md-3 mt-3">
-                                    <label class="form-label">Maturity Date</label>
-                                    <input id="Maturity_Date" type="date" name="Maturity_Date" class="form-control">
-                                </div>
-                                <div class="col-md-3 mt-3">
-                                    <label class="form-label">No. of Months</label>
-                                    <input id="No_of_Months" type="number" name="No_of_Months" class="form-control" readonly>
-                                </div>
-                                <div class="col-md-3 mt-3">
-                                    <label class="form-label">No. of Periods</label>
-                                    <select id="No_of_Periods" name="No_of_Periods" class="form-select">
-                                        <option value="">-- Select Period --</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Loan Amount</label>
-                                    <input id="Loan_Amount" type="number" step="0.01" name="Loan_Amount" class="form-control">
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Premium</label>
-                                    <input type="number" step="0.01" name="Premium" class="form-control">
-                                </div>
-                                <div class="col-md-4 mt-3" hidden>
-                                    <label class="form-label">Benefit</label>
-                                    <input type="number" step="0.01" name="Benefit" class="form-control">
-                                </div>
-
-                                <!-- Step 2 end -->
-                            </div>
-
-                            <!-- Step 3: Interest & Totals -->
-                            <div class="form-step mb-4 pb-3 border-bottom" data-step="3">
-                                <div class="mb-3">
-                                    <h6 class="mb-1"><strong>Step 3 — Interest & Totals</strong></h6>
-                                    <div class="small text-muted mb-2">Review interest rate and computed totals before assigning co-makers.</div>
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Interest Rate ID</label>
-                                    <input id="Interest_Rate_ID" name="Interest_Rate_ID" class="form-control" readonly>
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Total Interest Rate</label>
-                                    <input id="Total_Interest_Rate" type="number" step="0.0001" name="Total_Interest_Rate" class="form-control" readonly>
-                                </div>
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Total Interest</label>
-                                    <input id="Total_Interest" type="number" step="0.01" name="Total_Interest" class="form-control" readonly>
-                                </div>
-
-                                <div class="col-md-4 mt-3">
-                                    <label class="form-label">Total Amount</label>
-                                    <input id="Total_Amount" type="number" step="0.01" name="Total_Amount" class="form-control" readonly>
-                                </div>
-
-                                <!-- Step 3 end -->
-                            </div>
-
-                            <!-- Step 4: Co-makers & Divided Result -->
-                            <div class="form-step mb-4 pb-3 border-bottom" data-step="4">
-                                <div class="mb-3">
-                                    <h6 class="mb-1"><strong>Step 4 — Co-makers & Split</strong></h6>
-                                    <div id="step4Note" class="small text-muted mb-2">Select co-makers for group loans. The total will be split among borrower and selected co-makers.</div>
-                                </div>
-                                <div class="col-md-12 mt-3" id="coMakersContainer" style="display:none">
-                                    <label class="form-label">Co-makers</label>
-                                    <select id="co_makers" name="CoMaker_IDs[]" class="form-select" multiple style="width:100%"></select>
-                                </div>
-
-                                <div class="col-md-4 mt-3" id="dividedContainer" style="display:none">
-                                    <label class="form-label">Divided Result</label>
-                                    <input id="Divided_Result" name="Divided_Result" type="number" step="0.01" class="form-control" readonly>
-                                </div>
-
-                                <input type="hidden" name="save_loan" value="1">
-                                <div class="col-12 mt-3 text-end">
-                                    <button type="submit" class="btn btn-success">Save Loan</button>
-                                </div>
-                            </div>
-                        </form>
+                <!-- Page Header -->
+                <div class="lf-page-header">
+                    <div>
+                        <h5><i class="fa fa-hand-holding-usd me-2" style="color:var(--primary)"></i>New Loan Application</h5>
+                        <p>Complete all steps to submit a loan application.</p>
                     </div>
                 </div>
+
+                <?php if (!empty($success)): ?>
+                    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                <?php elseif (!empty($error)): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+
+                <form id="loanForm" method="post" enctype="multipart/form-data">
+
+                    <!-- ── Step 1: Client Verification ── -->
+                    <div class="lf-card">
+                        <div class="lf-section-title">
+                            <span class="lf-step-badge">1</span>
+                            <i class="fa fa-user-check"></i> Client Verification
+                        </div>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-9">
+                                <label class="form-label">Select Client <span class="text-danger">*</span></label>
+                                <select id="loan_client" name="Client_ID" class="form-select" style="width:100%"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" id="verifyClient" class="btn btn-lf-verify w-100">
+                                    <i class="fa fa-search-plus me-1"></i> Verify Client
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Client detail panel -->
+                        <div id="clientDetails" style="display:none" class="lf-client-detail mt-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-id-badge" style="color:var(--primary);font-size:1.1rem;"></i>
+                                <strong id="dName" style="font-size:.95rem;"></strong>
+                                <span class="ms-2 text-muted" style="font-size:.8rem;" id="dClientID"></span>
+                            </div>
+                            <div class="lf-detail-row">
+                                <div class="lf-detail-item"><label>Date of Birth</label><span id="dDOB">—</span></div>
+                                <div class="lf-detail-item"><label>Age</label><span id="dAge">—</span></div>
+                                <div class="lf-detail-item"><label>Civil Status</label><span id="dCivilStatus">—</span></div>
+                                <div class="lf-detail-item"><label>City / Municipality</label><span id="dCity">—</span></div>
+                                <div class="lf-detail-item"><label>Province</label><span id="dProvince">—</span></div>
+                                <div class="lf-detail-item"><label>Mobile No.</label><span id="dMobile">—</span></div>
+                                <div class="lf-detail-item"><label>Email</label><span id="dEmail">—</span></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label">Fixed Amount</label>
+                                <input id="Fixed_Amount" type="number" step="0.01" name="Fixed_Amount" class="form-control lf-computed" readonly placeholder="Auto-populated">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Step 2: Loan Details ── -->
+                    <div class="lf-card">
+                        <div class="lf-section-title">
+                            <span class="lf-step-badge">2</span>
+                            <i class="fa fa-file-invoice-dollar"></i> Loan Details
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Loan Type <span class="text-danger">*</span></label>
+                                <select name="Loan_Type" class="form-select">
+                                    <option value="">— Select Type —</option>
+                                    <option value="1">Personal</option>
+                                    <option value="2">Salary</option>
+                                    <option value="3">Group</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Payment Mode</label>
+                                <input name="Payment_Mode" class="form-control" placeholder="e.g. Weekly / Monthly">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">No. of Periods</label>
+                                <select id="No_of_Periods" name="No_of_Periods" class="form-select">
+                                    <option value="">— Select Period —</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Effective Date</label>
+                                <input id="Effective_Date" type="date" name="Effective_Date" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Maturity Date</label>
+                                <input id="Maturity_Date" type="date" name="Maturity_Date" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">No. of Months</label>
+                                <input id="No_of_Months" type="number" name="No_of_Months" class="form-control lf-computed" readonly placeholder="Auto-calculated">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Loan Amount <span class="text-danger">*</span></label>
+                                <input id="Loan_Amount" type="number" step="0.01" name="Loan_Amount" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Premium</label>
+                                <input type="number" step="0.01" name="Premium" class="form-control" placeholder="0.00">
+                            </div>
+                            <input type="hidden" name="Benefit" value="">
+                            <div class="col-md-6" id="salaryProofContainer" style="display:none">
+                                <label class="form-label"><i class="fa fa-paperclip me-1"></i>Salary Proof <small class="text-muted">(PDF / PNG / JPG)</small></label>
+                                <input id="Salary_Proof" name="Salary_Proof" type="file" accept=".pdf,image/png,image/jpeg" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Step 3: Interest & Totals ── -->
+                    <div class="lf-card">
+                        <div class="lf-section-title">
+                            <span class="lf-step-badge">3</span>
+                            <i class="fa fa-percentage"></i> Interest &amp; Totals
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Interest Rate ID</label>
+                                <input id="Interest_Rate_ID" name="Interest_Rate_ID" class="form-control lf-computed" readonly placeholder="Auto-set by loan type">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Interest Rate</label>
+                                <input id="Total_Interest_Rate" type="number" step="0.0001" name="Total_Interest_Rate" class="form-control lf-computed" readonly placeholder="0.0000">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Interest</label>
+                                <input id="Total_Interest" type="number" step="0.01" name="Total_Interest" class="form-control lf-computed" readonly placeholder="0.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Amount</label>
+                                <input id="Total_Amount" type="number" step="0.01" name="Total_Amount" class="form-control lf-computed" readonly placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Step 4: Co-makers & Split ── -->
+                    <div class="lf-card">
+                        <div class="lf-section-title">
+                            <span class="lf-step-badge">4</span>
+                            <i class="fa fa-users"></i> Co-makers &amp; Split
+                        </div>
+                        <p id="step4Note" class="mb-3" style="font-size:.82rem;color:rgba(255,255,255,0.45);">Select loan type first to configure co-makers.</p>
+                        <div class="row g-3">
+                            <div class="col-md-8" id="coMakersContainer" style="display:none">
+                                <label class="form-label">Co-makers <span class="text-danger">*</span></label>
+                                <select id="co_makers" name="CoMaker_IDs[]" class="form-select" multiple style="width:100%"></select>
+                            </div>
+                            <div class="col-md-4" id="dividedContainer" style="display:none">
+                                <label class="form-label">Divided Result</label>
+                                <input id="Divided_Result" name="Divided_Result" type="number" step="0.01" class="form-control lf-computed" readonly placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="save_loan" value="1">
+                        <div class="lf-action-bar">
+                            <button type="reset" class="btn btn-lf-outline"><i class="fa fa-times me-1"></i> Clear</button>
+                            <button type="submit" class="btn btn-lf-primary"><i class="fa fa-save me-1"></i> Save Loan</button>
+                        </div>
+                    </div>
+
+                </form>
             </div>
-            <!-- Blank Content End -->
 
 
             <!-- Footer Start -->
