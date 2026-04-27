@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -543,7 +543,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Template Javascript -->
-    <script src="../js/main.js"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script>
     $(function(){
         // Previous civil status from PHP session (if any)

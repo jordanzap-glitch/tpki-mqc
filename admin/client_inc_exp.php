@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -482,7 +482,7 @@ if ($rq) {
     <script src="../lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js"></script>
 
     <!-- Template Javascript -->
-    <script src="../js/main.js"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -245,7 +245,7 @@ if ($resS) {
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 
     <!-- Template Javascript -->
-    <script src="../js/main.js"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
         <script>
             (function(){
                 // Branch summary horizontal bar

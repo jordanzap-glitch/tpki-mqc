@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once __DIR__ . '/../db/dbcon.php';
 ?>
@@ -125,7 +125,7 @@ require_once __DIR__ . '/../db/dbcon.php';
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <!-- Template Javascript -->
-    <script src="../js/main.js"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script>
     $(document).ready(function() {
         $('#deptTable').DataTable({

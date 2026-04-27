@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -587,7 +587,7 @@ if (isset($_GET['fetch_clients'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Template Javascript -->
-    <script src="../js/main.js"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script>
     $(document).ready(function() {
 
