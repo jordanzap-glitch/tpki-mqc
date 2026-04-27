@@ -33,26 +33,7 @@
     });
 
 
-    // Theme Toggle
-    function updateThemeIcon(theme) {
-        var $icon = $('#theme-toggle i');
-        if (theme === 'light') {
-            $icon.removeClass('fa-moon').addClass('fa-sun');
-        } else {
-            $icon.removeClass('fa-sun').addClass('fa-moon');
-        }
-    }
 
-    var currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    updateThemeIcon(currentTheme);
-
-    $('#theme-toggle').on('click', function () {
-        var active = document.documentElement.getAttribute('data-theme');
-        var next = active === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        updateThemeIcon(next);
-    });
 
 
     // Progress Bar
