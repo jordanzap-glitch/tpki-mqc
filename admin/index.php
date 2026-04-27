@@ -125,7 +125,7 @@ if ($resS) {
                         <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
                             <i class="fa fa-users fa-3x text-primary"></i>
                             <div class="ms-3">
-                                <p class="mb-2">Total</p>
+                                <p class="mb-2">Total Users</p>
                                 <h3 class="mb-0"><?php echo number_format($totalUsers); ?></h3>
                             </div>
                         </div>
