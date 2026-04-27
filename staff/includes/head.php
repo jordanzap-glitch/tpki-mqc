@@ -21,4 +21,4 @@
     <link href="../css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Template Stylesheet -->
-    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/style.css?v=<?php echo filemtime(__DIR__ . '/../../css/style.css'); ?>" rel="stylesheet">
