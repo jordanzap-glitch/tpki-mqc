@@ -1,8 +1,8 @@
 <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
 
-    <!-- Lock to light mode -->
-    <script>document.documentElement.setAttribute('data-theme','light');</script>
+    <!-- Theme early init (prevents flash of wrong theme) -->
+    <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

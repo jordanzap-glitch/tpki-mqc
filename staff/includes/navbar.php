@@ -26,6 +26,11 @@ if (!empty($_SESSION['userId'])) {
                     <i class="fa fa-bars"></i>
                 </a>
                 <div class="navbar-nav align-items-center ms-auto">
+                    <div class="nav-item me-2">
+                        <button id="theme-toggle" class="btn btn-sm-square rounded-circle" title="Toggle Theme" style="background: var(--dark);">
+                            <i class="fa fa-moon text-primary"></i>
+                        </button>
+                    </div>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <img class="rounded-circle me-lg-2" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">

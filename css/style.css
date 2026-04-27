@@ -1,9 +1,9 @@
 /********** Template CSS **********/
 :root {
     --primary: #3df276;
-    --secondary: #ffffff;
-    --light: #495057;
-    --dark: #f0f2f5;
+    --secondary: #191C24;
+    --light: #6C7293;
+    --dark: #000000;
 }
 
 .back-to-top {
@@ -623,3 +623,13 @@ a:hover, a:focus {
     color: #212529 !important;
 }
 
+/* Theme toggle button */
+#theme-toggle {
+    border: none;
+    cursor: pointer;
+    transition: opacity .3s;
+}
+
+#theme-toggle:hover {
+    opacity: 0.75;
+}
