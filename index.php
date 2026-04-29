@@ -5,7 +5,7 @@ if (isset($_SESSION['userId'])) {
         header('Location: admin/index.php');
         exit;
     } else {
-        header('Location: index.php');
+        header('Location: staff/index.php');
         exit;
     }
 }
