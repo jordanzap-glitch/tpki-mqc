@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include 'includes/init.php';
 error_reporting (E_ALL);
 include '../db/dbcon.php';

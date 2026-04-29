@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include 'includes/init.php';
 include '../db/dbcon.php';
 
