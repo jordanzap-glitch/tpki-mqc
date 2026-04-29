@@ -1,5 +1,5 @@
-﻿<?php 
-session_start();
+﻿<?php
+include 'includes/init.php'; 
 error_reporting (E_ALL);
 
 require_once __DIR__ . '/../db/dbcon.php';

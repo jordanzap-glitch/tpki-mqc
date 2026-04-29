@@ -1,5 +1,5 @@
-<?php
-session_start();
+﻿<?php
+include 'includes/init.php';
 include __DIR__ . '/../db/dbcon.php';
 
 // Simple JSON endpoint for loan-side fetching
@@ -324,7 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         if (s === 'DENIED') cls = 'bg-danger';
                         var badge = '<span class="badge '+cls+'">'+s+'</span>';
                         var btns = ' <button class="btn btn-sm btn-success approve-loan" data-id="'+(row.id||'')+'" title="Approve"><i class="bi bi-check2"></i></button>'
-                                 + ' <button class="btn btn-sm btn-danger deny-loan" data-id="'+(row.id||'')+'" title="Deny">✖</button>';
+                                 + ' <button class="btn btn-sm btn-danger deny-loan" data-id="'+(row.id||'')+'" title="Deny">âœ–</button>';
                         return badge + btns;
                     }
                 },

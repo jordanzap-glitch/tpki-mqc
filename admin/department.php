@@ -1,5 +1,5 @@
 ﻿<?php
-session_start();
+include 'includes/init.php';
 require_once __DIR__ . '/../db/dbcon.php';
 ?>
 <!DOCTYPE html>

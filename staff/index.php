@@ -1,6 +1,6 @@
 ﻿<?php
+include 'includes/init.php';
 error_reporting (E_ALL);
-session_start();
 include '../db/dbcon.php';
 
 // Handle form submission
