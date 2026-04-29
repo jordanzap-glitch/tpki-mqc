@@ -311,6 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script>
     $(document).ready(function() {
         $('#recordsTable').DataTable({
