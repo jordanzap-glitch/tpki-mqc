@@ -8,6 +8,8 @@ $provData    = json_decode(file_get_contents(__DIR__ . '/includes/refprovince.js
 $citymunData = json_decode(file_get_contents(__DIR__ . '/includes/refcitymun.json'),  true);
 $brgyData    = json_decode(file_get_contents(__DIR__ . '/includes/refbrgy.json'),     true);
 $eduData     = json_decode(file_get_contents(__DIR__ . '/includes/refedu.json'),     true);
+// ID types reference
+$idsData     = json_decode(file_get_contents(__DIR__ . '/includes/refids.json'),  true);
 
 // Handle form submission (client only — skip when co-maker sub-form is posted)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['save_comaker'])) {
@@ -646,7 +648,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">ID Presented <span class="text-danger">*</span></label>
-                                <input name="ID_Presented" class="form-control" placeholder="e.g. PhilSys ID" required>
+                                <input list="idPresentedList" name="ID_Presented" class="form-control" placeholder="Select or type..." required autocomplete="off">
+                                <datalist id="idPresentedList">
+                                    <?php
+                                    if (isset($idsData['valid_ids']) && is_array($idsData['valid_ids'])) {
+                                        foreach ($idsData['valid_ids'] as $id) {
+                                            $label = isset($id['id_name']) ? $id['id_name'] : (isset($id['id_name']) ? $id['id_name'] : '');
+                                            $abbr = isset($id['abbreviation']) && $id['abbreviation'] ? ' (' . $id['abbreviation'] . ')' : '';
+                                            if ($label) echo '<option value="' . htmlspecialchars($label . $abbr) . '">';
+                                        }
+                                    }
+                                    ?>
+                                </datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">ID Reference No. <span class="text-danger">*</span></label>
@@ -880,7 +893,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">ID Presented</label>
-                                    <input name="cm_ID_Presented" class="form-control" placeholder="e.g. PhilSys ID">
+                                    <input list="idPresentedList" name="cm_ID_Presented" class="form-control" placeholder="Select or type..." autocomplete="off">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">ID Reference No.</label>

@@ -1,0 +1,42 @@
+{
+  "valid_ids": [
+    {
+      "id": 1,
+      "id_name": "Philippine National ID",
+      "abbreviation": "PhilSys ID",
+      "issued_by": "Philippine Statistics Authority",
+      "category": "Primary"
+    },
+    {
+      "id": 2,
+      "id_name": "Passport",
+      "issued_by": "Department of Foreign Affairs",
+      "category": "Primary"
+    },
+    {
+      "id": 3,
+      "id_name": "Driver's License",
+      "issued_by": "Land Transportation Office",
+      "category": "Primary"
+    },
+    {
+      "id": 4,
+      "id_name": "SSS ID / UMID",
+      "issued_by": "Social Security System",
+      "category": "Primary"
+    },
+    {
+      "id": 5,
+      "id_name": "GSIS UMID",
+      "issued_by": "Government Service Insurance System",
+      "category": "Primary",
+      "note": "For government employees"
+    },
+    {
+      "id": 6,
+      "id_name": "PRC ID",
+      "issued_by": "Professional Regulation Commission",
+      "category": "Primary"
+    }
+  ]
+}
