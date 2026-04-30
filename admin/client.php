@@ -2,8 +2,15 @@
 include 'includes/init.php';
 include '../db/dbcon.php';
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Load region + province + city/mun lists once for both address dropdowns
+$regData     = json_decode(file_get_contents(__DIR__ . '/includes/refregion.json'),  true);
+$provData    = json_decode(file_get_contents(__DIR__ . '/includes/refprovince.json'), true);
+$citymunData = json_decode(file_get_contents(__DIR__ . '/includes/refcitymun.json'),  true);
+$brgyData    = json_decode(file_get_contents(__DIR__ . '/includes/refbrgy.json'),     true);
+$eduData     = json_decode(file_get_contents(__DIR__ . '/includes/refedu.json'),     true);
+
+// Handle form submission (client only — skip when co-maker sub-form is posted)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['save_comaker'])) {
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     // Simple helper: get POST value or null
     function gv($k) { return isset($_POST[$k]) && $_POST[$k] !== '' ? $_POST[$k] : null; }
@@ -136,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
     }
     $comaker_id = sprintf('C-%04d', $cmNextNum);
 
+    $cm_Client_ID           = isset($_POST['cm_Client_ID'])           ? trim($_POST['cm_Client_ID'])           : '';
     $cm_Last_Name           = isset($_POST['cm_Last_Name'])           ? trim($_POST['cm_Last_Name'])           : '';
     $cm_First_Name          = isset($_POST['cm_First_Name'])          ? trim($_POST['cm_First_Name'])          : '';
     $cm_Middle_Name         = isset($_POST['cm_Middle_Name'])         ? trim($_POST['cm_Middle_Name'])         : '';
@@ -168,11 +176,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
     if (empty($cm_Last_Name) || empty($cm_First_Name)) {
         $cm_error = 'First and Last name are required.';
     } else {
-        $sql_cm = "INSERT INTO tbl_comaker_info (Comaker_ID, Last_Name, First_Name, Middle_Name, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, No_Of_Children, ID_Presented, ID_Reference_No, Income_Source, Other_Income_Source, Montly_Income, Business_Name, Business_Address, Name_Of_Spouse, Primary_Bank, Name_Of_Lending, Acquaintance_Duration, Relationship) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql_cm = "INSERT INTO tbl_comaker_info (Comaker_ID, Client_ID, Last_Name, First_Name, Middle_Name, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, No_Of_Children, ID_Presented, ID_Reference_No, Income_Source, Other_Income_Source, Montly_Income, Business_Name, Business_Address, Name_Of_Spouse, Primary_Bank, Name_Of_Lending, Acquaintance_Duration, Relationship) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt_cm = mysqli_prepare($conn, $sql_cm);
         if ($stmt_cm) {
-            mysqli_stmt_bind_param($stmt_cm, str_repeat('s', 29),
-                $comaker_id, $cm_Last_Name, $cm_First_Name, $cm_Middle_Name, $cm_Age, $cm_Gender,
+            mysqli_stmt_bind_param($stmt_cm, str_repeat('s', 30),
+                $comaker_id, $cm_Client_ID, $cm_Last_Name, $cm_First_Name, $cm_Middle_Name, $cm_Age, $cm_Gender,
                 $cm_Date_Of_Birth, $cm_Place_Of_Birth, $cm_Civil_Status, $cm_Mobile_No, $cm_Email_Address,
                 $cm_House_Street_Bldng, $cm_Barangay_Town, $cm_City_Municipality, $cm_Province, $cm_Zip_Code,
                 $cm_No_Of_Children, $cm_ID_Presented, $cm_ID_Reference_No, $cm_Income_Source,
@@ -542,25 +550,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label">Age</label>
-                                        <input name="Age" type="number" min="0" class="form-control" placeholder="25">
+                                        <input id="ageClient" name="Age" type="number" min="0" class="form-control" placeholder="25" readonly>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Gender</label>
-                                        <select name="Gender" class="form-select">
-                                            <option value="">— Select —</option>
-                                            <option>Male</option>
-                                            <option>Female</option>
-                                            <option>Other</option>
-                                        </select>
+                                        <input list="genderList" name="Gender" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                        <datalist id="genderList">
+                                            <option value="Male">
+                                            <option value="Female">
+                                            <option value="Other">
+                                        </datalist>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Date of Birth</label>
-                                        <input name="Date_Of_Birth" type="date" class="form-control">
+                                        <input id="dobClient" name="Date_Of_Birth" type="date" class="form-control">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-6">
                                         <label class="form-label">Place of Birth <span class="text-danger">*</span></label>
-                                        <input name="Place_Of_Birth" class="form-control" placeholder="City, Province" required>
+                                        <div class="d-flex gap-2">
+                                            <input id="pobProvClient" list="pobProvClientList" class="form-control" placeholder="Province..." required autocomplete="off">
+                                            <datalist id="pobProvClientList"></datalist>
+                                            <input id="pobCityClient" list="pobCityClientList" class="form-control" placeholder="City / Municipality..." required autocomplete="off">
+                                            <datalist id="pobCityClientList"></datalist>
+                                        </div>
                                     </div>
+                                    <input type="hidden" name="Place_Of_Birth" id="pobHiddenClient">
                                 </div>
                             </div>
                         </div>
@@ -575,13 +589,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Civil Status <span class="text-danger">*</span></label>
-                                <select name="Civil_Status" class="form-select" required>
-                                    <option value="">— Select —</option>
-                                    <option value="M"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='M') echo ' selected'; ?>>Married</option>
-                                    <option value="S"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='S') echo ' selected'; ?>>Single</option>
-                                    <option value="SP"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='SP') echo ' selected'; ?>>Single Parent</option>
-                                    <option value="MO"<?php if(isset($_POST['Civil_Status']) && $_POST['Civil_Status']==='MO') echo ' selected'; ?>>Married w/o Child</option>
-                                </select>
+                                <input list="civilClientList" name="Civil_Status" class="form-control" placeholder="Select or type..." required autocomplete="off">
+                                <datalist id="civilClientList">
+                                    <option value="Married">
+                                    <option value="Single">
+                                    <option value="Single Parent">
+                                    <option value="Married w/o Child">
+                                </datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Religion <span class="text-danger">*</span></label>
@@ -593,11 +607,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Educational Attainment <span class="text-danger">*</span></label>
-                                <input name="Educational_Attainment" class="form-control" placeholder="e.g. College Graduate" required>
+                                <input list="eduList" name="Educational_Attainment" class="form-control" placeholder="Select or type..." required>
+                                <datalist id="eduList">
+                                    <?php
+                                    if (isset($eduData['educational_attainment']) && is_array($eduData['educational_attainment'])) {
+                                        foreach ($eduData['educational_attainment'] as $e) {
+                                            if (isset($e['label'])) echo '<option value="' . htmlspecialchars($e['label']) . '">';
+                                        }
+                                    }
+                                    ?>
+                                </datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Mobile No. <span class="text-danger">*</span></label>
-                                <input name="Mobile_No" class="form-control" placeholder="09XX-XXX-XXXX" required>
+                                <input id="mobileClient" name="Mobile_No" type="tel" inputmode="numeric" pattern="09[0-9]{2}-[0-9]{3}-[0-9]{4}" class="form-control" placeholder="09xx-xxx-xxxx" maxlength="13" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Email Address <span class="text-danger">*</span></label>
@@ -625,21 +648,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             <i class="fa fa-map-marker-alt"></i> Address
                         </div>
                         <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Region <span class="text-danger">*</span></label>
+                                <input id="regionClient" list="regionClientList" name="Region" class="form-control" placeholder="Select or type region..." required autocomplete="off">
+                                <datalist id="regionClientList">
+                                    <?php
+                                    if ($regData && isset($regData['RECORDS'])) {
+                                        foreach ($regData['RECORDS'] as $reg) {
+                                            $rDesc = htmlspecialchars($reg['regDesc']);
+                                            echo "<option value=\"$rDesc\">";
+                                        }
+                                    }
+                                    ?>
+                                </datalist>
+                            </div>
                             <div class="col-md-12">
                                 <label class="form-label">House / Street / Building <span class="text-danger">*</span></label>
                                 <input name="House_Street_Bldng" class="form-control" placeholder="Blk 1 Lot 2, Sampaguita St." required>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Barangay / Town <span class="text-danger">*</span></label>
-                                <input name="Barangay_Town" class="form-control" placeholder="Barangay Name" required>
+                            <div class="col-md-3">
+                                <label class="form-label">Province <span class="text-danger">*</span></label>
+                                <input id="provinceClient" list="provClientList" name="Province" class="form-control" placeholder="Select or type province..." required autocomplete="off">
+                                <datalist id="provClientList"></datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">City / Municipality <span class="text-danger">*</span></label>
-                                <input name="City_Municipality" class="form-control" placeholder="City Name" required>
+                                <input id="cityClient" list="cityClientList" name="City_Municipality" class="form-control" placeholder="Select or type city..." required autocomplete="off">
+                                <datalist id="cityClientList"></datalist>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Province <span class="text-danger">*</span></label>
-                                <input name="Province" class="form-control" placeholder="Province Name" required>
+                            <div class="col-md-4">
+                                <label class="form-label">Barangay / Town <span class="text-danger">*</span></label>
+                                <input id="brgyClient" list="brgyClientList" name="Barangay_Town" class="form-control" placeholder="Select or type barangay..." required autocomplete="off">
+                                <datalist id="brgyClientList"></datalist>
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">Zip Code</label>
@@ -695,11 +735,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Age</label>
-                                <input name="Spouse_Age" class="form-control" placeholder="Age">
+                                <input id="ageSpouse" name="Spouse_Age" class="form-control" placeholder="Age" readonly>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Date of Birth</label>
-                                <input name="Spouse_DOB" type="date" class="form-control">
+                                <input id="dobSpouse" name="Spouse_DOB" type="date" class="form-control">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Monthly Income</label>
@@ -720,7 +760,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                     <!-- Action Bar -->
                     <div class="cf-action-bar">
                         <button type="reset" class="btn-cf-outline btn"><i class="fa fa-times me-1"></i> Clear</button>
-                        <button type="submit" class="btn-cf-primary btn"><i class="fa fa-save me-1"></i> Save Client</button>
                     </div>
 
                 </form>
@@ -738,6 +777,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
                     <form method="post" id="comakerForm">
                         <input type="hidden" name="save_comaker" value="1">
+                        <input type="hidden" name="cm_Client_ID" id="cm_Client_ID" value="">
 
                         <!-- Section 1: Personal Information -->
                         <div class="cf-card">
@@ -760,33 +800,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Age</label>
-                                    <input name="cm_Age" type="number" min="0" class="form-control" placeholder="Age">
+                                    <input id="ageComaker" name="cm_Age" type="number" min="0" class="form-control" placeholder="Age" readonly>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Gender</label>
-                                    <select name="cm_Gender" class="form-select">
-                                        <option value="">— Select —</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
+                                    <input list="genderList" name="cm_Gender" class="form-control" placeholder="Select or type..." autocomplete="off">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Date of Birth</label>
-                                    <input name="cm_Date_Of_Birth" type="date" class="form-control">
+                                    <input id="dobComaker" name="cm_Date_Of_Birth" type="date" class="form-control">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label class="form-label">Place of Birth</label>
-                                    <input name="cm_Place_Of_Birth" class="form-control" placeholder="Place of Birth">
+                                    <div class="d-flex gap-2">
+                                        <input id="pobProvComaker" list="pobProvComakerList" class="form-control" placeholder="Province..." autocomplete="off">
+                                        <datalist id="pobProvComakerList"></datalist>
+                                        <input id="pobCityComaker" list="pobCityComakerList" class="form-control" placeholder="City / Municipality..." autocomplete="off">
+                                        <datalist id="pobCityComakerList"></datalist>
+                                    </div>
                                 </div>
+                                <input type="hidden" name="cm_Place_Of_Birth" id="pobHiddenComaker">
                                 <div class="col-md-3">
                                     <label class="form-label">Civil Status</label>
-                                    <select name="cm_Civil_Status" class="form-select">
-                                        <option value="">— Select —</option>
-                                        <option value="Single">Single</option>
-                                        <option value="Married">Married</option>
-                                        <option value="Widowed">Widowed</option>
-                                        <option value="Separated">Separated</option>
-                                    </select>
+                                    <input list="civilComakerList" name="cm_Civil_Status" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                    <datalist id="civilComakerList">
+                                        <option value="Single">
+                                        <option value="Married">
+                                        <option value="Widowed">
+                                        <option value="Separated">
+                                    </datalist>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">No. of Children</label>
@@ -794,7 +836,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Mobile No.</label>
-                                    <input name="cm_Mobile_No" class="form-control" placeholder="09XX-XXX-XXXX">
+                                    <input id="mobileComaker" name="cm_Mobile_No" type="tel" inputmode="numeric" pattern="09[0-9]{2}-[0-9]{3}-[0-9]{4}" class="form-control" placeholder="09xx-xxx-xxxx" maxlength="13">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Email Address</label>
@@ -822,21 +864,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 <i class="fa fa-map-marker-alt"></i> Address
                             </div>
                             <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Region</label>
+                                    <input id="regionComaker" list="regionComakerList" name="cm_Region" class="form-control" placeholder="Select or type region..." autocomplete="off">
+                                    <datalist id="regionComakerList">
+                                        <?php
+                                        if ($regData && isset($regData['RECORDS'])) {
+                                            foreach ($regData['RECORDS'] as $reg) {
+                                                $rDesc = htmlspecialchars($reg['regDesc']);
+                                                echo "<option value=\"$rDesc\">";
+                                            }
+                                        }
+                                        ?>
+                                    </datalist>
+                                </div>
                                 <div class="col-md-12">
                                     <label class="form-label">House / Street / Building</label>
                                     <input name="cm_House_Street_Bldng" class="form-control" placeholder="Blk 1 Lot 2, Sampaguita St.">
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Barangay / Town</label>
-                                    <input name="cm_Barangay_Town" class="form-control" placeholder="Barangay Name">
+                                <div class="col-md-3">
+                                    <label class="form-label">Province</label>
+                                    <input id="provinceComaker" list="provComakerList" name="cm_Province" class="form-control" placeholder="Select or type province..." autocomplete="off">
+                                    <datalist id="provComakerList"></datalist>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">City / Municipality</label>
-                                    <input name="cm_City_Municipality" class="form-control" placeholder="City Name">
+                                    <input id="cityComaker" list="cityComakerList" name="cm_City_Municipality" class="form-control" placeholder="Select or type city..." autocomplete="off">
+                                    <datalist id="cityComakerList"></datalist>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Province</label>
-                                    <input name="cm_Province" class="form-control" placeholder="Province Name">
+                                <div class="col-md-4">
+                                    <label class="form-label">Barangay / Town</label>
+                                    <input id="brgyComaker" list="brgyComakerList" name="cm_Barangay_Town" class="form-control" placeholder="Select or type barangay..." autocomplete="off">
+                                    <datalist id="brgyComakerList"></datalist>
                                 </div>
                                 <div class="col-md-1">
                                     <label class="form-label">Zip Code</label>
@@ -904,13 +963,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                         <!-- Action Bar -->
                         <div class="cf-action-bar">
                             <button type="reset" class="btn-cf-outline btn"><i class="fa fa-times me-1"></i> Clear</button>
-                            <button type="submit" class="btn-cf-primary btn"><i class="fa fa-save me-1"></i> Save Co-maker</button>
                         </div>
 
                     </form>
                 </div><!-- end tab-comaker -->
 
                 </div><!-- end tab-content -->
+
+                <!-- ── Combined Save ──────────────────────────────────────────────── -->
+                <div class="cf-action-bar mt-3" style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1.25rem;">
+                    <button type="button" id="btnSaveAll" class="btn-cf-primary btn px-5">
+                        <i class="fa fa-save me-1"></i> Save Registration
+                    </button>
+                </div>
+
             </div><!-- end container-fluid -->
 
             <script>
@@ -925,6 +991,239 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 };
                 reader.readAsDataURL(file);
             });
+
+            // Province data keyed by regCode for JS filtering
+            var PROVINCE_DATA = <?php
+                $provByRegion = [];
+                if ($provData && isset($provData['RECORDS'])) {
+                    foreach ($provData['RECORDS'] as $p) {
+                        $provByRegion[$p['regCode']][] = [
+                            'code' => $p['provCode'],
+                            'desc' => $p['provDesc'],
+                        ];
+                    }
+                }
+                echo json_encode($provByRegion);
+            ?>;
+
+            // City/mun data keyed by provCode for JS filtering
+            var CITYMUN_DATA = <?php
+                $cityByProv = [];
+                if ($citymunData && isset($citymunData['RECORDS'])) {
+                    foreach ($citymunData['RECORDS'] as $c) {
+                        $cityByProv[$c['provCode']][] = [
+                            'code' => $c['citymunCode'],
+                            'desc' => $c['citymunDesc'],
+                        ];
+                    }
+                }
+                echo json_encode($cityByProv);
+            ?>;
+
+            // Barangay data keyed by citymunCode for JS filtering
+            var BRGY_DATA = <?php
+                $brgyByCity = [];
+                if ($brgyData && isset($brgyData['RECORDS'])) {
+                    foreach ($brgyData['RECORDS'] as $b) {
+                        $brgyByCity[$b['citymunCode']][] = $b['brgyDesc'];
+                    }
+                }
+                echo json_encode($brgyByCity);
+            ?>;
+
+            // Region lookup: regDesc → regCode (needed because input value = text desc)
+            var REGION_DATA = <?php
+                $regionDescToCode = [];
+                if ($regData && isset($regData['RECORDS'])) {
+                    foreach ($regData['RECORDS'] as $r) {
+                        $regionDescToCode[$r['regDesc']] = $r['regCode'];
+                    }
+                }
+                echo json_encode($regionDescToCode);
+            ?>;
+
+            // Build provDesc → provCode lookup
+            var PROV_CODE_MAP = {};
+            Object.keys(PROVINCE_DATA).forEach(function(regCode) {
+                PROVINCE_DATA[regCode].forEach(function(p) {
+                    PROV_CODE_MAP[p.desc] = p.code;
+                });
+            });
+
+            // Build cityDesc → citymunCode lookup
+            var CITY_CODE_MAP = {};
+            Object.keys(CITYMUN_DATA).forEach(function(provCode) {
+                CITYMUN_DATA[provCode].forEach(function(c) {
+                    CITY_CODE_MAP[c.desc] = c.code;
+                });
+            });
+
+            function populateDatalist(datalistId, items) {
+                var dl = document.getElementById(datalistId);
+                if (!dl) return;
+                dl.innerHTML = '';
+                items.forEach(function(item) {
+                    var opt = document.createElement('option');
+                    opt.value = item;
+                    dl.appendChild(opt);
+                });
+            }
+
+            function bindProvinceDropdown(regionInputId, provinceInputId, provinceDatalistId) {
+                var regionInput   = document.getElementById(regionInputId);
+                var provinceInput = document.getElementById(provinceInputId);
+                if (!regionInput || !provinceInput) return;
+
+                function populate() {
+                    var regCode = REGION_DATA[regionInput.value];
+                    provinceInput.value = '';
+                    provinceInput.dispatchEvent(new Event('change'));
+                    populateDatalist(provinceDatalistId,
+                        (regCode && PROVINCE_DATA[regCode])
+                            ? PROVINCE_DATA[regCode].map(function(p) { return p.desc; })
+                            : []
+                    );
+                }
+
+                regionInput.addEventListener('change', populate);
+            }
+
+            function bindCityDropdown(provinceInputId, cityInputId, cityDatalistId) {
+                var provinceInput = document.getElementById(provinceInputId);
+                var cityInput     = document.getElementById(cityInputId);
+                if (!provinceInput || !cityInput) return;
+
+                function populate() {
+                    var provCode = PROV_CODE_MAP[provinceInput.value];
+                    cityInput.value = '';
+                    cityInput.dispatchEvent(new Event('change'));
+                    populateDatalist(cityDatalistId,
+                        (provCode && CITYMUN_DATA[provCode])
+                            ? CITYMUN_DATA[provCode].map(function(c) { return c.desc; })
+                            : []
+                    );
+                }
+
+                provinceInput.addEventListener('change', populate);
+            }
+
+            function bindBarangayDropdown(cityInputId, brgyInputId, brgyDatalistId) {
+                var cityInput = document.getElementById(cityInputId);
+                var brgyInput = document.getElementById(brgyInputId);
+                if (!cityInput || !brgyInput) return;
+
+                function populate() {
+                    var cityCode = CITY_CODE_MAP[cityInput.value];
+                    brgyInput.value = '';
+                    populateDatalist(brgyDatalistId,
+                        (cityCode && BRGY_DATA[cityCode]) ? BRGY_DATA[cityCode] : []
+                    );
+                }
+
+                cityInput.addEventListener('change', populate);
+            }
+
+            function bindPobDropdowns(provInputId, cityInputId, provDatalistId, cityDatalistId, hiddenId) {
+                var provInput  = document.getElementById(provInputId);
+                var cityInput  = document.getElementById(cityInputId);
+                var hiddenEl   = document.getElementById(hiddenId);
+                if (!provInput || !cityInput || !hiddenEl) return;
+
+                // Populate province datalist with all provinces sorted alphabetically
+                var allProvinces = [];
+                Object.keys(PROVINCE_DATA).forEach(function(regCode) {
+                    PROVINCE_DATA[regCode].forEach(function(p) { allProvinces.push(p.desc); });
+                });
+                allProvinces.sort();
+                populateDatalist(provDatalistId, allProvinces);
+
+                function updateHidden() {
+                    var prov = provInput.value;
+                    var city = cityInput.value;
+                    hiddenEl.value = (city && prov) ? city + ', ' + prov : (prov || city || '');
+                }
+
+                function populateCities() {
+                    var provCode = PROV_CODE_MAP[provInput.value];
+                    cityInput.value = '';
+                    populateDatalist(cityDatalistId,
+                        (provCode && CITYMUN_DATA[provCode])
+                            ? CITYMUN_DATA[provCode].map(function(c) { return c.desc; })
+                            : []
+                    );
+                    updateHidden();
+                }
+
+                provInput.addEventListener('change', populateCities);
+                cityInput.addEventListener('change', updateHidden);
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                bindProvinceDropdown('regionClient',  'provinceClient',  'provClientList');
+                bindProvinceDropdown('regionComaker', 'provinceComaker', 'provComakerList');
+                bindCityDropdown('provinceClient',  'cityClient',  'cityClientList');
+                bindCityDropdown('provinceComaker', 'cityComaker', 'cityComakerList');
+                bindBarangayDropdown('cityClient',  'brgyClient',  'brgyClientList');
+                bindBarangayDropdown('cityComaker', 'brgyComaker', 'brgyComakerList');
+                bindPobDropdowns('pobProvClient',  'pobCityClient',  'pobProvClientList',  'pobCityClientList',  'pobHiddenClient');
+                bindPobDropdowns('pobProvComaker', 'pobCityComaker', 'pobProvComakerList', 'pobCityComakerList', 'pobHiddenComaker');
+            });
+
+            // Compute age from date-of-birth and populate readonly age fields
+            (function(){
+                function calcAge(dobStr){
+                    if(!dobStr) return '';
+                    var today = new Date();
+                    var dob = new Date(dobStr);
+                    if (isNaN(dob)) return '';
+                    var age = today.getFullYear() - dob.getFullYear();
+                    var m = today.getMonth() - dob.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                    return age >= 0 ? age : '';
+                }
+
+                function bind(dobId, ageId){
+                    var dob = document.getElementById(dobId);
+                    var age = document.getElementById(ageId);
+                    if(!dob || !age) return;
+                    age.readOnly = true;
+                    dob.addEventListener('change', function(){
+                        age.value = calcAge(dob.value);
+                    });
+                    // initial compute if value preset
+                    if (dob.value) age.value = calcAge(dob.value);
+                }
+
+                document.addEventListener('DOMContentLoaded', function(){
+                    bind('dobClient','ageClient');
+                    bind('dobSpouse','ageSpouse');
+                    bind('dobComaker','ageComaker');
+                    // Mobile formatting: auto-insert dashes to match 09xx-xxx-xxxx
+                    function formatMobileValue(val){
+                        var digits = val.replace(/\D/g,'').slice(0,11);
+                        if(digits.length <= 4) return digits;
+                        if(digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
+                        return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
+                    }
+
+                    function bindMobile(id){
+                        var el = document.getElementById(id);
+                        if(!el) return;
+                        el.addEventListener('input', function(e){
+                            var pos = el.selectionStart;
+                            var before = el.value;
+                            el.value = formatMobileValue(el.value);
+                            // try to keep caret near the end (best-effort)
+                            if (el.selectionStart < pos) el.selectionStart = el.selectionEnd = el.value.length;
+                        });
+                        // format initial value if present
+                        if(el.value) el.value = formatMobileValue(el.value);
+                    }
+
+                    bindMobile('mobileClient');
+                    bindMobile('mobileComaker');
+                });
+            })();
             </script>
 
             <!-- Footer Start -->
@@ -955,69 +1254,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
-        const form = document.getElementById('clientForm');
-        if (!form) return;
-        form.addEventListener('submit', async function(e){
-            e.preventDefault();
-            const fd = new FormData(form);
-            try {
-                const res = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+        var btnSaveAll = document.getElementById('btnSaveAll');
+        var clientForm = document.getElementById('clientForm');
+        var cmForm     = document.getElementById('comakerForm');
 
-                const text = await res.text();
-                let data = null;
-                try {
-                    data = JSON.parse(text);
-                } catch (parseErr) {
-                    throw new Error('Invalid JSON response from server: ' + text);
-                }
+        // Block accidental native form submits (Enter-key guard; no submit buttons present)
+        if (clientForm) clientForm.addEventListener('submit', function(e){ e.preventDefault(); });
+        if (cmForm)     cmForm.addEventListener('submit',     function(e){ e.preventDefault(); });
 
-                if (data && data.status === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message || 'Saved', confirmButtonText: 'OK' });
-                    form.reset();
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data && data.message ? data.message : 'Save failed', confirmButtonText: 'OK' });
-                }
-            } catch (err) {
-                console.error('Submit error:', err);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error: ' + err.message, confirmButtonText: 'OK' });
+        if (!btnSaveAll) return;
+
+        function digitsOnly(str){ return str ? str.replace(/\D/g,'') : ''; }
+
+        async function postAjax(formData){
+            var res = await fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var text = await res.text();
+            try { return JSON.parse(text); }
+            catch(e){ throw new Error('Invalid JSON: ' + text.substring(0, 300)); }
+        }
+
+        function resetBtn(){
+            btnSaveAll.disabled = false;
+            btnSaveAll.innerHTML = '<i class="fa fa-save me-1"></i> Save Registration';
+        }
+
+        btnSaveAll.addEventListener('click', async function(){
+
+            // ── Validate client form required fields ──────────────────────
+            if (!clientForm.checkValidity()){
+                clientForm.reportValidity();
+                return;
             }
-        });
-    });
-
-    // ── Co-maker form AJAX submit ─────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', function(){
-        const cmForm = document.getElementById('comakerForm');
-        if (!cmForm) return;
-        cmForm.addEventListener('submit', async function(e){
-            e.preventDefault();
-            const fd = new FormData(cmForm);
-            try {
-                const res = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: fd,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const text = await res.text();
-                let data = null;
-                try {
-                    data = JSON.parse(text);
-                } catch (parseErr) {
-                    throw new Error('Invalid JSON response from server: ' + text);
+            var mobileEl = document.getElementById('mobileClient');
+            if (mobileEl && mobileEl.value){
+                if (digitsOnly(mobileEl.value).length !== 11 || !mobileEl.value.startsWith('09')){
+                    Swal.fire({ icon:'error', title:'Invalid Mobile', text:'Client mobile must be 11 digits starting with 09', confirmButtonText:'OK' });
+                    return;
                 }
-                if (data && data.status === 'success') {
-                    Swal.fire({ icon: 'success', title: 'Saved', text: data.message || 'Saved', confirmButtonText: 'OK' });
+            }
+
+            btnSaveAll.disabled = true;
+            btnSaveAll.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving&hellip;';
+
+            // ── Step 1: Save Client ───────────────────────────────────────
+            var clientResult = null;
+            var clientId     = '';
+            try {
+                clientResult = await postAjax(new FormData(clientForm));
+            } catch(err){
+                Swal.fire({ icon:'error', title:'Error', text:'Network error: ' + err.message, confirmButtonText:'OK' });
+                resetBtn(); return;
+            }
+            if (!clientResult || clientResult.status !== 'success'){
+                Swal.fire({ icon:'error', title:'Client Save Failed', text: clientResult ? clientResult.message : 'Unknown error', confirmButtonText:'OK' });
+                resetBtn(); return;
+            }
+            var idMatch = clientResult.message.match(/CL-[A-Z0-9]{5}/);
+            clientId = idMatch ? idMatch[0] : '';
+
+            // ── Step 2: Save Co-maker (optional — only if name fields filled) ──
+            var cmLastEl  = cmForm.querySelector('[name="cm_Last_Name"]');
+            var cmFirstEl = cmForm.querySelector('[name="cm_First_Name"]');
+            var hasCm = (cmLastEl && cmLastEl.value.trim()) || (cmFirstEl && cmFirstEl.value.trim());
+
+            if (hasCm){
+                var mobileCm = document.getElementById('mobileComaker');
+                if (mobileCm && mobileCm.value){
+                    if (digitsOnly(mobileCm.value).length !== 11 || !mobileCm.value.startsWith('09')){
+                        Swal.fire({ icon:'warning', title:'Partial Save',
+                            html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker mobile is invalid; co-maker was not saved.',
+                            confirmButtonText:'OK' });
+                        clientForm.reset(); resetBtn(); return;
+                    }
+                }
+
+                // Inject the newly created Client_ID into the co-maker hidden field
+                var cmClientIdEl = document.getElementById('cm_Client_ID');
+                if (cmClientIdEl) cmClientIdEl.value = clientId;
+
+                var cmResult = null;
+                try {
+                    cmResult = await postAjax(new FormData(cmForm));
+                } catch(err){
+                    Swal.fire({ icon:'warning', title:'Partial Save',
+                        html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker network error: ' + err.message,
+                        confirmButtonText:'OK' });
+                    clientForm.reset(); resetBtn(); return;
+                }
+
+                if (cmResult && cmResult.status === 'success'){
+                    Swal.fire({ icon:'success', title:'Registration Complete',
+                        html:'Client and Co-maker registered successfully.<br><b>Client ID:</b> ' + clientId,
+                        confirmButtonText:'OK' });
+                    clientForm.reset();
                     cmForm.reset();
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: data && data.message ? data.message : 'Save failed', confirmButtonText: 'OK' });
+                    Swal.fire({ icon:'warning', title:'Partial Save',
+                        html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker error: ' + (cmResult ? cmResult.message : 'Unknown'),
+                        confirmButtonText:'OK' });
+                    clientForm.reset();
                 }
-            } catch (err) {
-                console.error('Co-maker submit error:', err);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Network or server error: ' + err.message, confirmButtonText: 'OK' });
+            } else {
+                // No co-maker data entered — client-only save
+                Swal.fire({ icon:'success', title:'Client Saved',
+                    html:'Client registered successfully.<br><b>Client ID:</b> ' + clientId,
+                    confirmButtonText:'OK' });
+                clientForm.reset();
             }
+
+            resetBtn();
         });
     });
     </script>

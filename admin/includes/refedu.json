@@ -1,0 +1,64 @@
+{
+  "educational_attainment": [
+    {
+      "id": 1,
+      "label": "No Formal Education",
+      "value": "no_formal_education"
+    },
+    {
+      "id": 2,
+      "label": "Elementary Level",
+      "value": "elementary_level"
+    },
+    {
+      "id": 3,
+      "label": "Elementary Graduate",
+      "value": "elementary_graduate"
+    },
+    {
+      "id": 4,
+      "label": "High School Level",
+      "value": "high_school_level"
+    },
+    {
+      "id": 5,
+      "label": "High School Graduate",
+      "value": "high_school_graduate"
+    },
+    {
+      "id": 6,
+      "label": "Senior High School Level",
+      "value": "senior_high_level"
+    },
+    {
+      "id": 7,
+      "label": "Senior High School Graduate",
+      "value": "senior_high_graduate"
+    },
+    {
+      "id": 8,
+      "label": "College Level",
+      "value": "college_level"
+    },
+    {
+      "id": 9,
+      "label": "College Graduate",
+      "value": "college_graduate"
+    },
+    {
+      "id": 10,
+      "label": "Vocational / Technical Course",
+      "value": "vocational"
+    },
+    {
+      "id": 11,
+      "label": "Postgraduate (Master’s Degree)",
+      "value": "masters_degree"
+    },
+    {
+      "id": 12,
+      "label": "Doctorate Degree (PhD)",
+      "value": "doctorate"
+    }
+  ]
+}
