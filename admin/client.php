@@ -518,19 +518,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Branch <span class="text-danger">*</span></label>
-                                        <select name="Branch_ID" class="form-select" required>
-                                            <option value="">— Select Branch —</option>
+                                        <input id="branchInput" list="branchList" class="form-control" placeholder="Select or type branch..." autocomplete="off" required>
+                                        <datalist id="branchList">
                                             <?php
                                             $bq = mysqli_query($conn, "SELECT Branch_ID, Branch_Name FROM tbl_branch WHERE Is_Active = 1 ORDER BY Branch_Name");
                                             if ($bq) {
                                                 while ($b = mysqli_fetch_assoc($bq)) {
-                                                    $bid = htmlspecialchars($b['Branch_ID']);
                                                     $bname = htmlspecialchars($b['Branch_Name']);
-                                                    echo "<option value=\"$bid\">$bname</option>";
+                                                    echo "<option value=\"$bname\">";
                                                 }
                                             }
                                             ?>
-                                        </select>
+                                        </datalist>
+                                        <input type="hidden" name="Branch_ID" id="branchIdHidden" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Nickname <span class="text-danger">*</span></label>
@@ -603,7 +603,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">No. of Children</label>
-                                <input name="No_Of_Children" type="number" min="0" class="form-control" placeholder="0">
+                                <input list="childrenList" name="No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                <datalist id="childrenList">
+                                    <option value="1">
+                                    <option value="2">
+                                    <option value="3">
+                                    <option value="4">
+                                    <option value="5">
+                                    <option value="6">
+                                    <option value="7">
+                                    <option value="8">
+                                    <option value="9">
+                                    <option value="10">
+                                    <option value="11">
+                                    <option value="12">
+                                    <option value="13">
+                                    <option value="14">
+                                    <option value="15">
+                                    <option value="More than 15">
+                                </datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Educational Attainment <span class="text-danger">*</span></label>
@@ -832,7 +850,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">No. of Children</label>
-                                    <input name="cm_No_Of_Children" type="number" min="0" class="form-control" placeholder="0">
+                                    <input list="childrenComakerList" name="cm_No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                    <datalist id="childrenComakerList">
+                                        <option value="1">
+                                        <option value="2">
+                                        <option value="3">
+                                        <option value="4">
+                                        <option value="5">
+                                        <option value="6">
+                                        <option value="7">
+                                        <option value="8">
+                                        <option value="9">
+                                        <option value="10">
+                                        <option value="11">
+                                        <option value="12">
+                                        <option value="13">
+                                        <option value="14">
+                                        <option value="15">
+                                        <option value="More than 15">
+                                    </datalist>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Mobile No.</label>
@@ -1031,6 +1067,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 echo json_encode($brgyByCity);
             ?>;
 
+            // Branch map: branchName -> Branch_ID (for datalist selection)
+            var BRANCH_MAP = <?php
+                $branchMap = [];
+                $bq = mysqli_query($conn, "SELECT Branch_ID, Branch_Name FROM tbl_branch WHERE Is_Active = 1 ORDER BY Branch_Name");
+                if ($bq) {
+                    while ($b = mysqli_fetch_assoc($bq)) {
+                        $branchMap[$b['Branch_Name']] = $b['Branch_ID'];
+                    }
+                }
+                echo json_encode($branchMap);
+            ?>;
+
             // Region lookup: regDesc → regCode (needed because input value = text desc)
             var REGION_DATA = <?php
                 $regionDescToCode = [];
@@ -1167,6 +1215,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 bindBarangayDropdown('cityComaker', 'brgyComaker', 'brgyComakerList');
                 bindPobDropdowns('pobProvClient',  'pobCityClient',  'pobProvClientList',  'pobCityClientList',  'pobHiddenClient');
                 bindPobDropdowns('pobProvComaker', 'pobCityComaker', 'pobProvComakerList', 'pobCityComakerList', 'pobHiddenComaker');
+
+                // Wire branch input to hidden Branch_ID
+                var branchInput = document.getElementById('branchInput');
+                var branchHidden = document.getElementById('branchIdHidden');
+                if (branchInput && branchHidden) {
+                    branchInput.addEventListener('change', function(){
+                        var id = BRANCH_MAP[branchInput.value] || '';
+                        branchHidden.value = id;
+                    });
+                    // clear hidden if input cleared
+                    branchInput.addEventListener('input', function(){ if (!branchInput.value) branchHidden.value = ''; });
+                }
             });
 
             // Compute age from date-of-birth and populate readonly age fields
