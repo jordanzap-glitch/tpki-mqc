@@ -479,12 +479,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             <i class="fa fa-user-plus"></i> Client Registration
                         </a>
                     </li>
-                    <li class="nav-item" role="presentation">
+                    <li class="nav-item" id="comakerTabItem" role="presentation" style="display:none">
                         <a class="nav-link" id="tab-comaker-lnk" data-bs-toggle="tab" href="#tab-comaker" role="tab">
                             <i class="fa fa-user-friends"></i> Co-maker Registration
                         </a>
                     </li>
+                    <li class="nav-item d-flex align-items-center" style="padding:0 .35rem;">
+                        <button type="button" id="btnToggleComaker" class="cf-tab-add-btn" title="Open Co-maker tab">
+                            <i class="fa fa-plus" id="iconToggleComaker"></i>
+                        </button>
+                    </li>
                 </ul>
+                <style>
+                .cf-tab-add-btn {
+                    background: none;
+                    border: 1.5px solid rgba(255,255,255,0.18);
+                    border-radius: 50%;
+                    width: 24px; height: 24px;
+                    display: inline-flex; align-items: center; justify-content: center;
+                    color: rgba(255,255,255,0.45);
+                    font-size: .7rem;
+                    margin-left: .5rem;
+                    cursor: pointer;
+                    transition: border-color .2s, color .2s, background .2s, transform .15s;
+                    flex-shrink: 0;
+                    padding: 0;
+                    line-height: 1;
+                }
+                .cf-tab-add-btn:hover {
+                    border-color: var(--primary);
+                    color: var(--primary);
+                    background: rgba(61,242,118,0.08);
+                    transform: scale(1.1);
+                }
+                .cf-tab-add-btn.is-open {
+                    border-color: rgba(255,100,100,0.55);
+                    color: rgba(255,100,100,0.8);
+                }
+                .cf-tab-add-btn.is-open:hover {
+                    background: rgba(255,100,100,0.08);
+                    border-color: rgba(255,100,100,0.8);
+                    color: rgba(255,100,100,1);
+                }
+                [data-theme="light"] .cf-tab-add-btn { border-color: #d1d9e0; color: #94a3b8; }
+                [data-theme="light"] .cf-tab-add-btn:hover { border-color: #1a7a3a; color: #1a7a3a; background: rgba(26,122,58,0.06); }
+                [data-theme="light"] .cf-tab-add-btn.is-open { border-color: rgba(220,53,69,.5); color: rgba(220,53,69,.8); }
+                [data-theme="light"] .cf-tab-add-btn.is-open:hover { background: rgba(220,53,69,.07); border-color: #dc3545; color: #dc3545; }
+                </style>
 
                 <div class="tab-content">
 
@@ -1327,6 +1368,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
+        // ── Co-maker tab toggle (+/-) ──────────────────────────────────────
+        var btnToggle      = document.getElementById('btnToggleComaker');
+        var comakerTabItem = document.getElementById('comakerTabItem');
+        var iconToggle     = document.getElementById('iconToggleComaker');
+        var tabClientLnk   = document.getElementById('tab-client-lnk');
+        var tabComakerLnk  = document.getElementById('tab-comaker-lnk');
+
+        if (btnToggle && comakerTabItem) {
+            btnToggle.addEventListener('click', function(){
+                var isOpen = comakerTabItem.style.display !== 'none';
+                if (isOpen) {
+                    // Close co-maker tab: switch to client, hide tab item
+                    if (tabClientLnk) tabClientLnk.click();
+                    comakerTabItem.style.display = 'none';
+                    iconToggle.className = 'fa fa-plus';
+                    btnToggle.classList.remove('is-open');
+                    btnToggle.title = 'Open Co-maker tab';
+                } else {
+                    // Open co-maker tab: show tab item, switch to it
+                    comakerTabItem.style.display = '';
+                    iconToggle.className = 'fa fa-minus';
+                    btnToggle.classList.add('is-open');
+                    btnToggle.title = 'Close Co-maker tab';
+                    if (tabComakerLnk) tabComakerLnk.click();
+                }
+            });
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         var btnSaveAll = document.getElementById('btnSaveAll');
         var clientForm = document.getElementById('clientForm');
         var cmForm     = document.getElementById('comakerForm');
