@@ -206,11 +206,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                    <th>Loan Amount</th>
                                    <th>Total Amount</th>
                                    <th>Action</th>
-                                   <th style="width:160px;">Status</th>
+                                   <th style="width:110px;">Status</th>
+                                   <th style="width:110px;">Approval</th>
                                </tr>
                            </thead>
                            <tbody>
-                               <tr><td colspan="10" class="text-center">No records loaded</td></tr>
+                               <tr><td colspan="11" class="text-center">No records loaded</td></tr>
                            </tbody>
                        </table>
 
@@ -362,10 +363,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         if (s === 'PENDING') cls = 'bg-warning text-dark';
                         if (s === 'APPROVED') cls = 'bg-success';
                         if (s === 'DENIED') cls = 'bg-danger';
-                        var badge = '<span class="badge '+cls+'">'+s+'</span>';
-                        var btns = ' <button class="btn btn-sm btn-success approve-loan" data-id="'+(row.id||'')+'" title="Approve"><i class="bi bi-check2"></i></button>'
-                                 + ' <button class="btn btn-sm btn-danger deny-loan" data-id="'+(row.id||'')+'" title="Deny">âœ–</button>';
-                        return badge + btns;
+                        return '<span class="badge '+cls+'">'+s+'</span>';
+                    }
+                },
+                { data: null, orderable: false, render: function(data, type, row){
+                        var id = row.id || '';
+                        var appBtn = '<button class="btn btn-sm btn-success approve-loan me-1" data-id="'+id+'" title="Approve"><i class="fa fa-check"></i></button>';
+                        var dnyBtn = '<button class="btn btn-sm btn-danger deny-loan" data-id="'+id+'" title="Deny"><i class="fa fa-times"></i></button>';
+                        return '<div class="text-nowrap">'+appBtn+dnyBtn+'</div>';
                     }
                 },
             ],

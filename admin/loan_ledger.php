@@ -4,13 +4,44 @@ require_once __DIR__ . '/../db/dbcon.php';
 
 // ─── AJAX: Fetch approved loans for dropdown ───
 if (isset($_GET['fetch_approved_loans'])) {
+    $group_filter = isset($_GET['group_id']) ? trim($_GET['group_id']) : '';
     $out = ['data' => []];
-    $sql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
-                   l.Loan_Type, l.Loan_Amount, l.Total_Amount, l.Loan_Status
-            FROM tbl_loan_info l
-            LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
-            WHERE l.Loan_Status = 'APPROVED'
-            ORDER BY l.id DESC";
+    if ($group_filter !== '') {
+        // Only loans whose Client_ID is in the selected group
+        $safe_g = mysqli_real_escape_string($conn, $group_filter);
+        $sql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
+                       l.Loan_Type, l.Loan_Amount, l.Total_Amount, l.Loan_Status
+                FROM tbl_loan_info l
+                LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
+                WHERE l.Loan_Status = 'APPROVED'
+                  AND l.Client_ID IN (SELECT Client_ID FROM tbl_group_loan WHERE Group_ID = '$safe_g')
+                ORDER BY l.id DESC";
+    } else {
+        $sql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
+                       l.Loan_Type, l.Loan_Amount, l.Total_Amount, l.Loan_Status
+                FROM tbl_loan_info l
+                LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
+                WHERE l.Loan_Status = 'APPROVED'
+                ORDER BY l.id DESC";
+    }
+    $res = mysqli_query($conn, $sql);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
+        mysqli_free_result($res);
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($out);
+    exit;
+}
+
+// ─── AJAX: Fetch group list ───
+if (isset($_GET['fetch_groups'])) {
+    $out = ['data' => []];
+    $sql = "SELECT DISTINCT g.Group_ID, g.Info,
+                COUNT(g.Client_ID) AS member_count
+            FROM tbl_group_loan g
+            GROUP BY g.Group_ID, g.Info
+            ORDER BY g.Group_ID ASC";
     $res = mysqli_query($conn, $sql);
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
@@ -495,6 +526,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         [data-theme="light"] .dataTables_wrapper .dataTables_info { color: #64748b; }
         [data-theme="light"] .table-responsive::-webkit-scrollbar-thumb { background: rgba(26,122,58,0.3); }
         [data-theme="light"] .table-responsive { scrollbar-color: rgba(26,122,58,0.3) #f0f4f8; }
+        /* Group filter switch */
+        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+        #groupInfoPanel { transition: opacity .2s; }
+        [data-theme="light"] #groupInfoPanel { background: rgba(26,122,58,0.05); border-color: rgba(26,122,58,0.2); color: #1e293b; }
+        /* Group toggle button */
+        .ll-group-toggle {
+            display: inline-flex; align-items: center; gap: .55rem;
+            padding: .45rem 1.1rem;
+            border-radius: 20px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.5);
+            font-size: .82rem; font-weight: 600;
+            cursor: pointer;
+            transition: border-color .2s, background .2s, color .2s, box-shadow .2s;
+            user-select: none;
+        }
+        .ll-group-toggle:hover {
+            border-color: rgba(61,242,118,0.45);
+            background: rgba(61,242,118,0.06);
+            color: rgba(255,255,255,0.8);
+        }
+        .ll-group-toggle.active {
+            border-color: var(--primary);
+            background: rgba(61,242,118,0.12);
+            color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(61,242,118,0.1);
+        }
+        .ll-group-toggle .ll-toggle-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            transition: background .2s;
+            flex-shrink: 0;
+        }
+        .ll-group-toggle.active .ll-toggle-dot { background: var(--primary); }
+        [data-theme="light"] .ll-group-toggle { border-color: #d1d9e0; background: #f8fafc; color: #64748b; }
+        [data-theme="light"] .ll-group-toggle:hover { border-color: rgba(26,122,58,0.4); background: rgba(26,122,58,0.04); color: #1e293b; }
+        [data-theme="light"] .ll-group-toggle.active { border-color: #1a7a3a; background: rgba(26,122,58,0.08); color: #1a7a3a; box-shadow: 0 0 0 3px rgba(26,122,58,0.1); }
+        [data-theme="light"] .ll-group-toggle .ll-toggle-dot { background: #cbd5e0; }
+        [data-theme="light"] .ll-group-toggle.active .ll-toggle-dot { background: #1a7a3a; }
     </style>
 </head>
 
@@ -527,6 +598,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 <div class="ll-card">
                     <div class="ll-section-title">
                         <i class="fa fa-search"></i> Select Approved Loan
+                    </div>
+                    <!-- Group filter toggle -->
+                    <div class="mb-3">
+                        <button type="button" id="btnToggleGroup" class="ll-group-toggle">
+                            <span class="ll-toggle-dot"></span>
+                            <i class="fa fa-users"></i>
+                            <span id="toggleGroupLabel">Filter by Group</span>
+                        </button>
+                    </div>
+                    <!-- Group dropdown (hidden by default) -->
+                    <div id="groupFilterRow" class="row g-3 mb-3" style="display:none">
+                        <div class="col-md-5">
+                            <label class="form-label">Group</label>
+                            <select id="groupSelect" class="form-select" style="width:100%">
+                                <option value="">— All Groups —</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="row g-3 align-items-end">
                         <div class="col-md-7">
@@ -679,18 +767,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
 
         // Init select2
         $('#loanSelect').select2({ placeholder:'— Select an approved loan —', allowClear:true, width:'100%' });
+        $('#groupSelect').select2({ placeholder:'— All Groups —', allowClear:true, width:'100%' });
 
-        // Load approved loans into dropdown
-        $.getJSON('loan_ledger.php', { fetch_approved_loans:1 }).done(function(res){
-            if (res && res.data) {
-                res.data.forEach(function(l){
-                    var label = l.Loan_ID + ' — ' + ((l.Last_Name||'')+', '+(l.First_Name||'')).toUpperCase()
-                              + ' — ₱' + parseFloat(l.Total_Amount||0).toLocaleString();
-                    $('#loanSelect').append(new Option(label, l.Loan_ID, false, false));
-                });
+        // ── Load loans into dropdown (optionally filtered by group) ──
+        function loadLoans(groupID) {
+            var params = { fetch_approved_loans: 1 };
+            if (groupID) params.group_id = groupID;
+            var $sel = $('#loanSelect');
+            $sel.empty().append(new Option('— Select an approved loan —', ''));
+            $.getJSON('loan_ledger.php', params).done(function(res){
+                if (res && res.data) {
+                    res.data.forEach(function(l){
+                        var label = l.Loan_ID + ' — ' + ((l.Last_Name||'')+', '+(l.First_Name||'')).toUpperCase()
+                                  + ' — ₱' + parseFloat(l.Total_Amount||0).toLocaleString();
+                        $sel.append(new Option(label, l.Loan_ID, false, false));
+                    });
+                }
+                $sel.val('').trigger('change');  // Reset selection and refresh Select2
+                $('#spinner').removeClass('show');
+            }).fail(function(){ $('#spinner').removeClass('show'); });
+        }
+
+        // Initial load — all approved loans
+        loadLoans('');
+
+        // ── Load groups into group dropdown (once only) ──
+        var groupsLoaded = false;
+        function loadGroups() {
+            if (groupsLoaded) return;
+            $.getJSON('loan_ledger.php', { fetch_groups: 1 }).done(function(res){
+                if (res && res.data) {
+                    $('#groupSelect').empty().append(new Option('— All Groups —', ''));
+                    res.data.forEach(function(g){
+                        var label = g.Group_ID
+                            + (g.Info ? ' — ' + g.Info : '')
+                            + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')';
+                        $('#groupSelect').append(new Option(label, g.Group_ID, false, false));
+                    });
+                    $('#groupSelect').val('').trigger('change');
+                    groupsLoaded = true;
+                }
+            });
+        }
+
+        // ── Group toggle button ──
+        var groupFilterOpen = false;
+        $('#btnToggleGroup').on('click', function(){
+            groupFilterOpen = !groupFilterOpen;
+            var $btn = $(this);
+            if (groupFilterOpen) {
+                $btn.addClass('active');
+                $('#toggleGroupLabel').text('Hide Group Filter');
+                $('#groupFilterRow').slideDown(200);
+                loadGroups();
+            } else {
+                $btn.removeClass('active');
+                $('#toggleGroupLabel').text('Filter by Group');
+                $('#groupFilterRow').slideUp(200);
+                $('#groupSelect').val('').trigger('change');
+                selectedLoanID = '';
+                $('#loanSummary').hide();
+                $('#ledgerSection').hide();
+                $('#btnGenerate').prop('disabled', true);
+                loadLoans('');
             }
-            $('#spinner').removeClass('show');
-        }).fail(function(){ $('#spinner').removeClass('show'); });
+        });
+
+        // ── Group selection → filter loans + show group info ──
+        $('#groupSelect').on('change', function(){
+            var gid = $(this).val();
+            if (gid) {
+                // Show info panel
+                var selText = $('#groupSelect option:selected').text();
+                $('#groupInfoText').text(selText);
+                $('#groupInfoPanel').show();
+            } else {
+                $('#groupInfoPanel').hide();
+            }
+            // Reset loan select and reload filtered
+            selectedLoanID = '';
+            $('#loanSummary').hide();
+            $('#ledgerSection').hide();
+            $('#btnGenerate').prop('disabled', true);
+            loadLoans(gid);
+        });
 
         function fmt(n){
             return '₱ ' + parseFloat(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
