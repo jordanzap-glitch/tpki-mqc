@@ -14,7 +14,7 @@ if (isset($_GET['fetch_approved_loans'])) {
                 FROM tbl_loan_info l
                 LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
                 WHERE l.Loan_Status = 'APPROVED'
-                  AND l.Client_ID IN (SELECT Client_ID FROM tbl_group_loan WHERE Group_ID = '$safe_g')
+                  AND l.Client_ID IN (SELECT DISTINCT Client_ID FROM tbl_group_loan WHERE Group_ID = '$safe_g')
                 ORDER BY l.id DESC";
     } else {
         $sql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
@@ -270,6 +270,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
     mysqli_stmt_close($stmt);
 
     echo json_encode(['success' => $affected > 0]);
+    exit;
+}
+
+// ─── AJAX POST: Update penalty for a ledger row ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_penalty'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $id      = intval($_POST['id'] ?? 0);
+    $penalty = floatval($_POST['penalty'] ?? 0);
+    if ($penalty < 0) $penalty = 0;
+    if (!$id) { echo json_encode(['success' => false, 'msg' => 'Missing id']); exit; }
+
+    $stmt = mysqli_prepare($conn,
+        "SELECT Principal_Payment, Interest_Payment FROM tbl_loan_ledger2 WHERE id = ? AND Payment_Status = 'PENDING' LIMIT 1");
+    mysqli_stmt_bind_param($stmt, 'i', $id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($res);
+    if (!$row) { echo json_encode(['success' => false, 'msg' => 'Row not found or already paid']); exit; }
+
+    $new_total = round(floatval($row['Principal_Payment']) + floatval($row['Interest_Payment']) + $penalty, 2);
+
+    $upd = mysqli_prepare($conn,
+        "UPDATE tbl_loan_ledger2 SET Penalty = ?, Total_Payment = ? WHERE id = ? AND Payment_Status = 'PENDING'");
+    mysqli_stmt_bind_param($upd, 'ddi', $penalty, $new_total, $id);
+    mysqli_stmt_execute($upd);
+    $affected = mysqli_stmt_affected_rows($upd);
+    mysqli_stmt_close($upd);
+
+    echo json_encode(['success' => $affected > 0, 'new_total' => $new_total, 'penalty' => $penalty]);
     exit;
 }
 ?>
@@ -566,6 +595,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         [data-theme="light"] .ll-group-toggle.active { border-color: #1a7a3a; background: rgba(26,122,58,0.08); color: #1a7a3a; box-shadow: 0 0 0 3px rgba(26,122,58,0.1); }
         [data-theme="light"] .ll-group-toggle .ll-toggle-dot { background: #cbd5e0; }
         [data-theme="light"] .ll-group-toggle.active .ll-toggle-dot { background: #1a7a3a; }
+        /* Edit penalty button */
+        .btn-edit-penalty {
+            background: none; border: none;
+            color: rgba(255,255,255,0.75);
+            cursor: pointer; padding: 0 0 0 5px;
+            transition: color .15s; vertical-align: middle; line-height: 1;
+        }
+        .btn-edit-penalty:hover { color: var(--primary); }
+        .btn-edit-penalty i { font-size: .65rem; }
+        [data-theme="light"] .btn-edit-penalty { color: #333; }
+        [data-theme="light"] .btn-edit-penalty:hover { color: #1a7a3a; }
+        /* Edit Penalty Modal */
+        #editPenaltyModal .modal-content {
+            background: #1a2332;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+        #editPenaltyModal .modal-header { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1rem 1.25rem .75rem; }
+        #editPenaltyModal .modal-footer { border-top: 1px solid rgba(255,255,255,0.08); padding: .75rem 1.25rem; }
+        #editPenaltyModal .modal-body { padding: 1.25rem; }
+        #editPenaltyModal .ep-mini-panel {
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px; padding: .6rem .8rem;
+        }
+        #editPenaltyModal .ep-mini-label {
+            font-size: .68rem; font-weight: 700;
+            color: rgba(255,255,255,0.38);
+            text-transform: uppercase; letter-spacing: .08em; margin-bottom: .2rem;
+        }
+        #editPenaltyModal .ep-mini-value { font-size: .88rem; font-weight: 700; color: #e2e5f1; }
+        #editPenaltyModal .ep-mini-value.accent { color: var(--primary); }
+        #editPenaltyModal .ep-total-panel {
+            background: rgba(61,242,118,0.07);
+            border: 1px solid rgba(61,242,118,0.2);
+            border-radius: 8px; padding: .7rem 1rem;
+        }
+        #editPenaltyModal .ep-total-label {
+            font-size: .68rem; font-weight: 700;
+            color: rgba(255,255,255,0.38);
+            text-transform: uppercase; letter-spacing: .08em; margin-bottom: .25rem;
+        }
+        #editPenaltyModal #penaltyModalTotal { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+        #editPenaltyModal #penaltyModalInput {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e5f1; border-radius: 8px; height: 42px;
+        }
+        #editPenaltyModal #penaltyModalInput:focus {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(61,242,118,0.12);
+            color: #fff;
+        }
+        [data-theme="light"] #editPenaltyModal .modal-content { background: #fff; border-color: #e2e8f0; }
+        [data-theme="light"] #editPenaltyModal .modal-header,
+        [data-theme="light"] #editPenaltyModal .modal-footer { border-color: #e2e8f0; }
+        [data-theme="light"] #editPenaltyModal .ep-mini-panel { background: #f8fafc; }
+        [data-theme="light"] #editPenaltyModal .ep-mini-label,
+        [data-theme="light"] #editPenaltyModal .ep-total-label { color: #94a3b8; }
+        [data-theme="light"] #editPenaltyModal .ep-mini-value { color: #1e293b; }
+        [data-theme="light"] #editPenaltyModal .ep-mini-value.accent { color: #1a7a3a; }
+        [data-theme="light"] #editPenaltyModal .ep-total-panel { background: rgba(26,122,58,0.05); border-color: rgba(26,122,58,0.2); }
+        [data-theme="light"] #editPenaltyModal #penaltyModalTotal { color: #1a7a3a; }
+        [data-theme="light"] #editPenaltyModal #penaltyModalInput { background: #f8fafc; border-color: #d1d9e0; color: #212529; }
     </style>
 </head>
 
@@ -752,6 +845,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up text-white"></i></a>
     </div>
 
+    <!-- ── Edit Penalty Modal ── -->
+    <div class="modal fade" id="editPenaltyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" style="color:#fff;font-weight:700;font-size:.95rem;">
+                        <i class="fa fa-edit me-2" style="color:var(--primary)"></i>Edit Penalty
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="penaltyRowId">
+                    <input type="hidden" id="penaltyPrincipal">
+                    <input type="hidden" id="penaltyInterest">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="ep-mini-panel">
+                                <div class="ep-mini-label">Principal</div>
+                                <div class="ep-mini-value accent" id="penaltyModalPrincipal">—</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="ep-mini-panel">
+                                <div class="ep-mini-label">Interest</div>
+                                <div class="ep-mini-value" id="penaltyModalInterest">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label style="font-size:.78rem;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:.35rem;display:block;">Penalty Amount</label>
+                        <input type="number" id="penaltyModalInput" class="form-control" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="ep-total-panel">
+                        <div class="ep-total-label">New Total Payment</div>
+                        <div id="penaltyModalTotal">—</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ll-outline btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="btnSavePenalty" class="btn btn-ll-primary btn-sm">
+                        <i class="fa fa-save me-1"></i>Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../lib/chart/chart.min.js"></script>
@@ -774,6 +914,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         // Data structures for datalists
         var groupsMap = {};
         var loansLoadedForGroup = '';
+        var groupLoadTimer = null;
 
         // ── Load loans into dropdown (optionally filtered by group) ──
         function loadLoans(groupID) {
@@ -866,12 +1007,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
             } else {
                 $('#groupInfoPanel').hide();
             }
-            // Reset loan selection and reload filtered
+            // Reset loan selection
             selectedLoanID = '';
             $('#loanSummary').hide();
             $('#ledgerSection').hide();
             $('#btnGenerate').prop('disabled', true);
-            loadLoans(gid);
+            // Debounce: 'input' and 'change' both fire when picking from datalist;
+            // guard prevents loadLoans from running twice with the same group.
+            clearTimeout(groupLoadTimer);
+            groupLoadTimer = setTimeout(function(){ loadLoans(gid); }, 50);
         });
 
         function fmt(n){
@@ -935,7 +1079,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                                 { data: 'Beginning_Balance', render: function(d){ return fmt(d); } },
                                 { data: 'Principal_Payment',  render: function(d){ return fmt(d); } },
                                 { data: 'Interest_Payment',   render: function(d){ return fmt(d); } },
-                                { data: 'Penalty',            render: function(d){ return parseFloat(d||0) > 0 ? '<span style="color:#dc3545;font-weight:700">'+fmt(d)+'</span>' : fmt(d); } },
+                                { data: 'Penalty', render: function(d, t, row){
+                                    var penVal = parseFloat(d||0);
+                                    var valHtml = penVal > 0 ? '<span style="color:#dc3545;font-weight:700">'+fmt(penVal)+'</span>' : fmt(penVal);
+                                    if ((row.Payment_Status||'').toUpperCase() === 'PENDING') {
+                                        var editBtn = '<button class="btn-edit-penalty" data-id="'+row.id+'" data-principal="'+row.Principal_Payment+'" data-interest="'+row.Interest_Payment+'" data-penalty="'+(d||0)+'" title="Edit Penalty"><i class="fa fa-pen"></i></button>';
+                                        return '<span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">'+valHtml+editBtn+'</span>';
+                                    }
+                                    return valHtml;
+                                }},
                                 { data: 'Total_Payment',      render: function(d){ return '<strong>'+fmt(d)+'</strong>'; } },
                                 { data: 'Ending_Balance',     render: function(d){ return fmt(d); } },
                                 { data: 'Payment_Status', render: function(d){
@@ -995,6 +1147,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                         Swal.fire('Error', resp.msg || 'Approval failed', 'error');
                     }
                 }, 'json').fail(function(){ Swal.fire('Error','Server error','error'); });
+            });
+        });
+
+        // ── Edit Penalty Modal ──
+        var penaltyModal = new bootstrap.Modal(document.getElementById('editPenaltyModal'));
+
+        function calcPenaltyTotal() {
+            var princ = parseFloat($('#penaltyPrincipal').val() || 0);
+            var inter = parseFloat($('#penaltyInterest').val() || 0);
+            var pen   = parseFloat($('#penaltyModalInput').val() || 0);
+            if (isNaN(pen) || pen < 0) pen = 0;
+            var total = princ + inter + pen;
+            $('#penaltyModalTotal').text('₱ ' + total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}));
+        }
+
+        $(document).on('click', '.btn-edit-penalty', function(){
+            var $btn = $(this);
+            var princ = parseFloat($btn.data('principal') || 0);
+            var inter = parseFloat($btn.data('interest') || 0);
+            var pen   = parseFloat($btn.data('penalty') || 0);
+            $('#penaltyRowId').val($btn.data('id'));
+            $('#penaltyPrincipal').val(princ);
+            $('#penaltyInterest').val(inter);
+            $('#penaltyModalPrincipal').text(fmt(princ));
+            $('#penaltyModalInterest').text(fmt(inter));
+            $('#penaltyModalInput').val(pen > 0 ? pen.toFixed(2) : '');
+            calcPenaltyTotal();
+            penaltyModal.show();
+        });
+
+        $('#penaltyModalInput').on('input', calcPenaltyTotal);
+
+        $('#btnSavePenalty').on('click', function(){
+            var id      = $('#penaltyRowId').val();
+            var penalty = parseFloat($('#penaltyModalInput').val() || 0);
+            if (isNaN(penalty) || penalty < 0) penalty = 0;
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Saving...');
+            $.post('loan_ledger.php', { update_penalty: 1, id: id, penalty: penalty }, function(resp){
+                $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i>Save');
+                if (resp && resp.success) {
+                    penaltyModal.hide();
+                    Swal.fire({ icon: 'success', title: 'Updated', text: 'Penalty updated successfully.', confirmButtonColor: '#1a7a3a', timer: 1800, showConfirmButton: false });
+                    loadLedger(selectedLoanID);
+                } else {
+                    Swal.fire('Error', resp.msg || 'Failed to update penalty', 'error');
+                }
+            }, 'json').fail(function(){
+                $btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i>Save');
+                Swal.fire('Error', 'Server error', 'error');
             });
         });
 

@@ -352,9 +352,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         var loanAmt = row.Loan_Amount || '';
                         var totalAmt = row.Total_Amount || '';
                         var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-loan me-1" data-id="'+id+'" title="View">' + '<i class="bi bi-eye"></i></button>';
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-loan me-1" data-id="'+id+'" title="Edit">' + '<i class="bi bi-pencil"></i></button>';
                         var delBtn = '<button type="button" class="btn btn-sm btn-danger delete-loan" data-id="'+id+'" title="Delete">' + '<i class="bi bi-trash"></i></button>';
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + delBtn + '</div>';
+                        return '<div class="text-nowrap">' + viewBtn + delBtn + '</div>';
                     } },
                 { data: 'Loan_Status', render: function(data, type, row){
                         var s = (data||'').toString().trim().toUpperCase();

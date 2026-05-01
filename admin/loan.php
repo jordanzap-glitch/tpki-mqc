@@ -51,6 +51,33 @@ if ($grp_q) {
 }
 $groups_list = array_values($groups_data);
 
+// ─── AJAX: Check loan cycle count & last loan for a client ───
+if (isset($_GET['check_loan_cycle'])) {
+    $cid = isset($_GET['client_id']) ? trim($_GET['client_id']) : '';
+    $out = ['cycle' => 0, 'last_amount' => null, 'last_maturity' => null, 'last_loan_id' => null, 'last_status' => null];
+    if ($cid !== '') {
+        $safe_cid = mysqli_real_escape_string($conn, $cid);
+        $cnt_q = mysqli_query($conn, "SELECT COUNT(*) AS cnt FROM tbl_loan_info WHERE Client_ID = '$safe_cid'");
+        if ($cnt_q) {
+            $row = mysqli_fetch_assoc($cnt_q);
+            $out['cycle'] = intval($row['cnt']);
+            mysqli_free_result($cnt_q);
+        }
+        $last_q = mysqli_query($conn, "SELECT Loan_ID, Loan_Amount, Maturity_Date, Loan_Status FROM tbl_loan_info WHERE Client_ID = '$safe_cid' AND Loan_Status = 'APPROVED' ORDER BY Maturity_Date DESC, id DESC LIMIT 1");
+        if ($last_q && mysqli_num_rows($last_q) > 0) {
+            $lr = mysqli_fetch_assoc($last_q);
+            $out['last_amount']  = $lr['Loan_Amount'];
+            $out['last_maturity']= $lr['Maturity_Date'];
+            $out['last_loan_id'] = $lr['Loan_ID'];
+            $out['last_status']  = $lr['Loan_Status'];
+            mysqli_free_result($last_q);
+        }
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($out);
+    exit;
+}
+
 // Handle save loan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     // Generate next Loan_ID in format L-0001
@@ -396,6 +423,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     [data-theme="light"] .btn-lf-outline:hover { color:#1e293b; border-color:#94a3b8; }
     [data-theme="light"] .btn-lf-verify { background:rgba(26,122,58,0.08); border-color:rgba(26,122,58,0.35); color:#1a7a3a; }
     [data-theme="light"] #step4Note { color:#64748b; }
+    /* Renewal notice */
+    #renewalNotice {
+        background: rgba(61,242,118,0.07);
+        border: 1px solid rgba(61,242,118,0.28);
+        border-radius: 10px;
+        padding: .85rem 1.2rem;
+        display: flex; align-items: flex-start; gap: 1rem;
+    }
+    #renewalNotice .rn-icon {
+        width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+        background: rgba(61,242,118,0.15);
+        border: 1.5px solid rgba(61,242,118,0.4);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--primary); font-size: 1rem;
+    }
+    #renewalNotice .rn-title {
+        font-size: .8rem; font-weight: 700; color: var(--primary);
+        text-transform: uppercase; letter-spacing: .07em; margin-bottom: .25rem;
+    }
+    #renewalNotice .rn-body { font-size: .86rem; color: #e2e5f1; line-height: 1.45; }
+    #renewalNotice .rn-body strong { color: var(--primary); }
+    #renewalNotice .rn-meta {
+        margin-top: .4rem; display: flex; flex-wrap: wrap; gap: .5rem .9rem;
+    }
+    #renewalNotice .rn-chip {
+        background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 6px; padding: .2rem .65rem;
+        font-size: .76rem; color: rgba(255,255,255,0.7);
+    }
+    #renewalNotice .rn-chip span { font-weight: 700; color: #e2e5f1; }
+    [data-theme="light"] #renewalNotice { background: rgba(26,122,58,0.06); border-color: rgba(26,122,58,0.28); }
+    [data-theme="light"] #renewalNotice .rn-icon { background: rgba(26,122,58,0.12); border-color: rgba(26,122,58,0.4); color: #1a7a3a; }
+    [data-theme="light"] #renewalNotice .rn-title { color: #1a7a3a; }
+    [data-theme="light"] #renewalNotice .rn-body { color: #1e293b; }
+    [data-theme="light"] #renewalNotice .rn-body strong { color: #1a7a3a; }
+    [data-theme="light"] #renewalNotice .rn-chip { background: #f1f5f9; border-color: #e2e8f0; color: #475569; }
+    [data-theme="light"] #renewalNotice .rn-chip span { color: #1e293b; }
     </style>
 </head>
 
@@ -656,6 +720,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                             <span class="lf-step-badge">2</span>
                             <i class="fa fa-file-invoice-dollar"></i> Loan Details
                         </div>
+
+                        <!-- Renewal notice panel -->
+                        <div id="renewalNotice" class="mb-3" style="display:none">
+                            <div class="rn-icon"><i class="fa fa-sync-alt"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="rn-title"><i class="fa fa-bell me-1"></i> Loan Renewal</div>
+                                <div class="rn-body">This client is eligible for a <strong>loan renewal</strong>. See their last loan details below before proceeding.</div>
+                                <div class="rn-meta">
+                                    <div class="rn-chip">Loan Cycle &nbsp;<span id="rnCycle">—</span></div>
+                                    <div class="rn-chip">Last Loan ID &nbsp;<span id="rnLoanID">—</span></div>
+                                    <div class="rn-chip">Last Loan Amount &nbsp;<span id="rnAmount">—</span></div>
+                                    <div class="rn-chip">Maturity Date &nbsp;<span id="rnMaturity">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Payment Mode</label>
@@ -849,6 +929,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             $('#dEmail').text(c.Email_Address || '');
             $('#dMobile').text(c.Mobile_No || '');
             $('#clientDetails').show();
+            // Check loan cycle for renewal notice
+            $('#renewalNotice').hide();
+            var verifiedClientID = sel;
+            $.getJSON('loan.php', { check_loan_cycle: 1, client_id: verifiedClientID }).done(function(lc){
+                if (lc && lc.cycle >= 2 && lc.last_status && lc.last_status.toUpperCase() === 'APPROVED') {
+                    var fmtAmt = lc.last_amount !== null
+                        ? '\u20b1 ' + parseFloat(lc.last_amount).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+                        : '\u2014';
+                    $('#rnCycle').text(lc.cycle);
+                    $('#rnLoanID').text(lc.last_loan_id || '\u2014');
+                    $('#rnAmount').text(fmtAmt);
+                    $('#rnMaturity').text(lc.last_maturity || '\u2014');
+                    $('#rnStatus').text((lc.last_status || '\u2014').toUpperCase());
+                    $('#renewalNotice').show();
+                }
+            });
             // scroll to details
             $('html,body').animate({scrollTop: $('#clientDetails').offset().top - 80}, 300);
         });
