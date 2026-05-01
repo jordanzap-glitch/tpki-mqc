@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_interest_rate']
     if ($code === '') {
         $error = 'Interest Rate Code is required.';
     } else {
+        $code = floatval($code) / 100;
         $istmt = mysqli_prepare($conn, "INSERT INTO tbl_interest_rate (Interest_Rate_ID, Interest_Rate_Code, Interest_Rate_Description) VALUES (?, ?, ?)");
         if ($istmt) {
             mysqli_stmt_bind_param($istmt, 'sss', $ir_id, $code, $desc);
@@ -59,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_interest'])) 
 // Handle edit/update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_interest'])) {
     $eid = intval($_POST['edit_interest']);
-    $ecode = isset($_POST['edit_Interest_Rate_Code']) ? trim($_POST['edit_Interest_Rate_Code']) : null;
+    $ecode = isset($_POST['edit_Interest_Rate_Code']) ? floatval(trim($_POST['edit_Interest_Rate_Code'])) / 100 : null;
     $edesc = isset($_POST['edit_Interest_Rate_Description']) ? trim($_POST['edit_Interest_Rate_Description']) : null;
     $usql = "UPDATE tbl_interest_rate SET Interest_Rate_Code=?, Interest_Rate_Description=? WHERE id=?";
     $ustmt = mysqli_prepare($conn, $usql);
@@ -153,8 +154,11 @@ if ($rq) {
                                 <input type="text" class="form-control" value="<?php echo isset($ir_id) ? htmlspecialchars($ir_id) : 'IN-001'; ?>" readonly>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Interest Rate Code</label>
-                                <input type="number" name="Interest_Rate_Code" class="form-control" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" step="0.001" required>
+                                <label class="form-label">Interest Rate Code <small class="text-muted">(max 100%)</small></label>
+                                <div class="input-group">
+                                    <input type="number" name="Interest_Rate_Code" class="form-control" inputmode="decimal" step="0.001" min="0" max="100" placeholder="e.g. 5.5" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Interest Rate Description</label>
@@ -249,8 +253,11 @@ if ($rq) {
                             <div class="modal-body">
                                 <input type="hidden" name="edit_interest" id="edit_interest">
                                 <div class="mb-3">
-                                    <label class="form-label">Interest Rate Code</label>
-                                    <input type="number" name="edit_Interest_Rate_Code" id="edit_Interest_Rate_Code" class="form-control" inputmode="decimal" pattern="^[0-9]+(\.[0-9]+)?$" step="0.01" required>
+                                    <label class="form-label">Interest Rate Code <small class="text-muted">(max 100%)</small></label>
+                                    <div class="input-group">
+                                        <input type="number" name="edit_Interest_Rate_Code" id="edit_Interest_Rate_Code" class="form-control" inputmode="decimal" step="0.001" min="0" max="100" placeholder="e.g. 5.5" required>
+                                        <span class="input-group-text">%</span>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Interest Rate Description</label>
@@ -305,7 +312,8 @@ if ($rq) {
         $(document).on('click', '.view-rate', function() {
             var btn = $(this);
             $('#vrIRID').text(btn.data('irid') || '');
-            $('#vrCode').text(btn.data('code') || '');
+            var rawCode = parseFloat(btn.data('code')) || 0;
+            $('#vrCode').text(parseFloat((rawCode * 100).toFixed(3)) + '%');
             $('#vrDesc').text(btn.data('desc') || '');
         });
 
@@ -313,7 +321,8 @@ if ($rq) {
         $(document).on('click', '.edit-rate', function() {
             var btn = $(this);
             $('#edit_interest').val(btn.data('id') || '');
-            $('#edit_Interest_Rate_Code').val(btn.data('code') || '');
+            var rawEditCode = parseFloat(btn.data('code')) || 0;
+            $('#edit_Interest_Rate_Code').val(parseFloat((rawEditCode * 100).toFixed(3)));
             $('#edit_Interest_Rate_Description').val(btn.data('desc') || '');
         });
 
