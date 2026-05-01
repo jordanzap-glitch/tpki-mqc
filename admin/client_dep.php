@@ -223,14 +223,14 @@ if ($dq) {
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Client</label>
-                                <select name="Client_ID" class="form-select select2" style="width:100%">
-                                    <option value="">-- Select client --</option>
+                                <input type="text" id="clientSearchInput" list="clientDataList" class="form-control" placeholder="Search client by name or ID..." autocomplete="off">
+                                <input type="hidden" name="Client_ID" id="clientHidden">
+                                <datalist id="clientDataList">
                                     <?php foreach ($clients as $c):
-                                        $label = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
-                                        $val = htmlspecialchars($c['Client_ID']);
-                                        echo "<option value=\"$val\">$label</option>";
+                                        $dlabel = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
+                                        echo "<option value=\"$dlabel\"></option>";
                                     endforeach; ?>
-                                </select>
+                                </datalist>
                             </div>
                             <div class="row g-2">
                                 <div class="col-md-4 mb-3">
@@ -398,14 +398,14 @@ if ($dq) {
                             <div class="row g-2">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Client</label>
-                                    <select name="edit_Client_ID" id="edit_Client_ID" class="form-select select2" style="width:100%">
-                                        <option value="">-- Select client --</option>
+                                    <input type="text" id="editClientSearchInput" list="editClientDataList" class="form-control" placeholder="Search client by name or ID..." autocomplete="off">
+                                    <input type="hidden" name="edit_Client_ID" id="editClientHidden">
+                                    <datalist id="editClientDataList">
                                         <?php foreach ($clients as $c):
-                                            $label = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
-                                            $val = htmlspecialchars($c['Client_ID']);
-                                            echo "<option value=\"$val\">$label</option>";
+                                            $dlabel = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
+                                            echo "<option value=\"$dlabel\"></option>";
                                         endforeach; ?>
-                                    </select>
+                                    </datalist>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Last Name</label>
@@ -478,12 +478,17 @@ if ($dq) {
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
-    $(function(){
-        if ($('.select2').length) {
-            $('.select2').select2({ width: '100%' });
-        }
-    });
     $(document).ready(function(){
+        // Datalist handlers: extract Client_ID from selection like "LAST, FIRST (CL-001)"
+        $('#clientSearchInput').on('input change', function(){
+            var m = this.value.match(/\(([^)]+)\)$/);
+            $('#clientHidden').val(m ? m[1] : '');
+        });
+        $('#editClientSearchInput').on('input change', function(){
+            var m = this.value.match(/\(([^)]+)\)$/);
+            $('#editClientHidden').val(m ? m[1] : '');
+        });
+
         if ($('#dependentsTable').length) {
             $('#dependentsTable').DataTable({ paging:true, searching:true, info:true, ordering:true, columnDefs:[{orderable:false, targets:[0]}] });
         }
@@ -508,7 +513,12 @@ if ($dq) {
         $(document).on('click', '.edit-dependent-btn', function() {
             var btn = $(this);
             $('#edit_dependent').val(btn.data('id') || '');
-            $('#edit_Client_ID').val(btn.data('clientid') || '').trigger('change');
+            var cid = btn.data('clientid') || '';
+            $('#editClientHidden').val(cid);
+            // find matching display value in datalist
+            var found = '';
+            $('#editClientDataList option').each(function(){ if (this.value.indexOf('(' + cid + ')') !== -1) { found = this.value; return false; } });
+            $('#editClientSearchInput').val(found);
             $('#edit_Last_Name').val(btn.data('last') || '');
             $('#edit_First_Name').val(btn.data('first') || '');
             $('#edit_Middle_Name').val(btn.data('middle') || '');

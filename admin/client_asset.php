@@ -209,14 +209,14 @@ if ($aq) {
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Client</label>
-                                <select name="Client_ID" class="form-select select2" style="width:100%">
-                                    <option value="">-- Select client --</option>
+                                <input type="text" id="clientSearchInput" list="clientDataList" class="form-control" placeholder="Search client by name or ID..." autocomplete="off">
+                                <input type="hidden" name="Client_ID" id="clientHidden">
+                                <datalist id="clientDataList">
                                     <?php foreach ($clients as $c):
-                                        $label = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
-                                        $val = htmlspecialchars($c['Client_ID']);
-                                        echo "<option value=\"$val\">$label</option>";
+                                        $dlabel = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
+                                        echo "<option value=\"$dlabel\"></option>";
                                     endforeach; ?>
-                                </select>
+                                </datalist>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Asset Name</label>
@@ -335,14 +335,14 @@ if ($aq) {
                                 <input type="hidden" name="edit_asset" id="edit_asset">
                                 <div class="mb-3">
                                     <label class="form-label">Client</label>
-                                    <select name="edit_Client_ID" id="edit_Client_ID" class="form-select select2" style="width:100%">
-                                        <option value="">-- Select client --</option>
+                                    <input type="text" id="editClientSearchInput" list="editClientDataList" class="form-control" placeholder="Search client by name or ID..." autocomplete="off">
+                                    <input type="hidden" name="edit_Client_ID" id="editClientHidden">
+                                    <datalist id="editClientDataList">
                                         <?php foreach ($clients as $c):
-                                            $label = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
-                                            $val = htmlspecialchars($c['Client_ID']);
-                                            echo "<option value=\"$val\">$label</option>";
+                                            $dlabel = htmlspecialchars($c['Last_Name'] . ', ' . $c['First_Name'] . ' (' . $c['Client_ID'] . ')');
+                                            echo "<option value=\"$dlabel\"></option>";
                                         endforeach; ?>
-                                    </select>
+                                    </datalist>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Asset Name</label>
@@ -394,9 +394,16 @@ if ($aq) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     $(document).ready(function() {
-        if ($('.select2').length) {
-            $('.select2').select2({ width: '100%' });
-        }
+        // Extract Client_ID from datalist selection — add form
+        $('#clientSearchInput').on('input change', function(){
+            var m = this.value.match(/\(([^)]+)\)$/);
+            $('#clientHidden').val(m ? m[1] : '');
+        });
+        // Extract Client_ID from datalist selection — edit modal
+        $('#editClientSearchInput').on('input change', function(){
+            var m = this.value.match(/\(([^)]+)\)$/);
+            $('#editClientHidden').val(m ? m[1] : '');
+        });
         $('#assetsTable').DataTable({ paging:true, searching:true, info:true, ordering:true, columnDefs:[{orderable:false, targets:[0,5]}] });
 
         // Populate view modal (redesigned)
@@ -418,7 +425,11 @@ if ($aq) {
         $(document).on('click', '.edit-asset', function() {
             var btn = $(this);
             $('#edit_asset').val(btn.data('id') || '');
-            $('#edit_Client_ID').val(btn.data('clientid') || '').trigger('change');
+            var cid = btn.data('clientid') || '';
+            $('#editClientHidden').val(cid);
+            var found = '';
+            $('#editClientDataList option').each(function(){ if (this.value.indexOf('(' + cid + ')') !== -1) { found = this.value; return false; } });
+            $('#editClientSearchInput').val(found);
             $('#edit_Asset_Name').val(btn.data('aname') || '');
             $('#edit_Asset_Description').val(btn.data('adesc') || '');
         });

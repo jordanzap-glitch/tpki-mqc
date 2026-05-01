@@ -67,6 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     // Collect inputs
     $client_id = isset($_POST['Client_ID']) ? trim($_POST['Client_ID']) : null;
     $loan_type = isset($_POST['Loan_Type']) ? trim($_POST['Loan_Type']) : null;
+    // If Loan_Type was submitted as a datalist label like "Personal (1)", extract the numeric code
+    if ($loan_type !== null && preg_match('/\((\d+)\)$/', $loan_type, $ltm)) {
+        $loan_type = $ltm[1];
+    }
     $loan_cycle = null; // will be computed server-side based on existing loans for the client
     $effective_date = isset($_POST['Effective_Date']) && $_POST['Effective_Date'] !== '' ? $_POST['Effective_Date'] : null;
     $maturity_date = isset($_POST['Maturity_Date']) && $_POST['Maturity_Date'] !== '' ? $_POST['Maturity_Date'] : null;
@@ -446,7 +450,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                         <div class="row g-3 align-items-end">
                             <div class="col-md-9">
                                 <label class="form-label">Select Client <span class="text-danger">*</span></label>
-                                <select id="loan_client" name="Client_ID" class="form-select" style="width:100%"></select>
+                                <input id="loanClientSearch" list="loanClientList" class="form-control" placeholder="Search client by name or ID...">
+                                <input type="hidden" name="Client_ID" id="loan_client">
+                                <datalist id="loanClientList">
+                                </datalist>
                             </div>
                             <div class="col-md-3">
                                 <button type="button" id="verifyClient" class="btn btn-lf-verify w-100">
@@ -476,12 +483,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                         <div class="row g-3 mt-1">
                             <div class="col-md-4">
                                 <label class="form-label">Loan Type <span class="text-danger">*</span></label>
-                                <select name="Loan_Type" class="form-select">
-                                    <option value="">— Select Type —</option>
-                                    <option value="1">Personal</option>
-                                    <option value="2">Salary</option>
-                                    <option value="3">Group</option>
-                                </select>
+                                <input id="Loan_Type" name="Loan_Type" list="loanTypeList" class="form-control" placeholder="Select Type...">
+                                <datalist id="loanTypeList">
+                                    <option value="Personal (1)"></option>
+                                    <option value="Salary (2)"></option>
+                                    <option value="Group (3)"></option>
+                                </datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Fixed Amount</label>
@@ -618,14 +625,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                             <div class="row g-3">
                                 <div class="col-md-5">
                                     <label class="form-label">Select Group <span class="text-danger">*</span></label>
-                                    <select name="Join_Group_ID" id="joinGroupSelect" class="form-select">
-                                        <option value="">— Select a Group —</option>
-                                        <?php foreach ($groups_list as $g): ?>
-                                        <option value="<?php echo htmlspecialchars($g['Group_ID']); ?>">
-                                            <?php echo htmlspecialchars($g['Group_ID']); ?><?php if (!empty($g['Info'])): ?> — <?php echo htmlspecialchars($g['Info']); ?><?php endif; ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <input id="joinGroupInput" list="joinGroupList" class="form-control" placeholder="Select a Group...">
+                                    <input type="hidden" name="Join_Group_ID" id="joinGroupHidden" value="">
+                                    <datalist id="joinGroupList">
+                                        <?php foreach ($groups_list as $g):
+                                            $label = htmlspecialchars($g['Group_ID'] . ($g['Info'] ? ' — ' . $g['Info'] : '') . ' (' . $g['Group_ID'] . ')');
+                                            echo "<option value=\"{$label}\"></option>";
+                                        endforeach; ?>
+                                    </datalist>
                                 </div>
                                 <div class="col-md-7">
                                     <label class="form-label">Current Members</label>
@@ -656,9 +663,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">No. of Periods</label>
-                                <select id="No_of_Periods" name="No_of_Periods" class="form-select">
-                                    <option value="">— Select Period —</option>
-                                </select>
+                                <input id="No_of_Periods_display" list="periodsList" class="form-control" placeholder="Select period...">
+                                <input type="hidden" name="No_of_Periods" id="No_of_Periods" value="">
+                                <datalist id="periodsList"></datalist>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Effective Date</label>
@@ -770,24 +777,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         };
 
         var clientsMap = {};
-        // initialize empty select2
-        $('#loan_client').select2({
-            placeholder: '-- Select client --',
-            allowClear: true,
-            width: '100%'
-        });
-
-        // load clients via existing endpoint
+        // load clients and populate datalist for client search
         $.getJSON('client_record.php?fetch_clients=1').done(function(res){
             if (res && res.data) {
                 res.data.forEach(function(c){
                     var id = c.Client_ID || '';
-                    var text = (c.Last_Name||'') + ', ' + (c.First_Name||'') + ' — ' + id;
+                    var label = (c.Last_Name||'') + ', ' + (c.First_Name||'') + ' (' + id + ')';
                     clientsMap[id] = c;
-                    var option = new Option(text, id, false, false);
-                    $('#loan_client').append(option);
+                    $('#loanClientList').append($('<option>').val(label));
                 });
-                $('#loan_client').trigger('change');
             }
         }).fail(function(){
             console.warn('Failed to load clients.');
@@ -878,21 +876,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         }
 
         // When loan type changes, set the Interest_Rate_ID and total rate
-        $('select[name="Loan_Type"]').on('change', function(){
-            var t = $(this).val();
+        $('#Loan_Type').on('input change', function(){
+            var raw = $(this).val() || '';
+            var m = raw.match(/\((\d+)\)$/);
+            var t = m ? m[1] : raw;
             setInterestRateFieldsByType(t);
             populatePeriodsByType(t);
             // show/hide salary proof upload for Salary loan (type '2')
-            if (t === '2') {
+            if (String(t) === '2') {
                 $('#salaryProofContainer').show();
             } else {
                 $('#salaryProofContainer').hide();
                 $('#Salary_Proof').val('');
             }
             // show/hide group config card
-            if (t === '3') {
+            if (String(t) === '3') {
                 $('#groupConfigCard').show();
-                // prefill client ID display
+                // prefill client ID display from hidden field
                 var selClient = $('#loan_client').val() || '';
                 $('#groupClientIDDisplay').val(selClient);
             } else {
@@ -903,20 +903,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         // Populate No_of_Periods options depending on loan type
         function populatePeriodsByType(typeVal) {
             var map = {
-                // Personal: Weekly=4, Monthly=1
                 '1': [ {val:4, text:'Weekly'}, {val:1, text:'Monthly'} ],
-                // Salary: Semi-month (2), 6 months (6), 12 months (12)
                 '2': [ {val:2, text:'Semi-Month'}, {val:6, text:'6 Months'}, {val:12, text:'12 Months'} ],
-                // Group: Weekly only
                 '3': [ {val:4, text:'Weekly'} ]
             };
             var opts = map[typeVal] || [ {val:1, text:'Monthly'} ];
-            var $sel = $('#No_of_Periods');
-            $sel.empty();
-            $sel.append(new Option('-- Select Period --', ''));
+            // populate visible datalist and clear hidden numeric value
+            $('#periodsList').empty();
+            $('#No_of_Periods_display').val('');
+            $('#No_of_Periods').val('');
             opts.forEach(function(o){
-                var opt = new Option(o.text, o.val, false, false);
-                $sel.append(opt);
+                var label = o.text + ' (' + o.val + ')';
+                $('#periodsList').append($('<option>').val(label));
             });
         }
 
@@ -946,7 +944,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
 
         // Show/hide duplicate-member warning in the join panel
         function refreshJoinWarning() {
-            var gid = $('#joinGroupSelect').val();
+            var gid = $('#joinGroupHidden').val();
             var selClient = $('#loan_client').val() || '';
             var $warn = $('#groupJoinWarning');
             if (!gid || !selClient) { $warn.hide(); return; }
@@ -983,9 +981,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             }
         });
 
-        // When join group selected, show members
-        $('#joinGroupSelect').on('change', function(){
-            var gid = $(this).val();
+        // When join group input changes, set hidden ID and show members
+        $('#joinGroupInput').on('input change', function(){
+            var raw = $(this).val() || '';
+            var m = raw.match(/\(([^)]+)\)$/);
+            var gid = m ? m[1] : '';
+            $('#joinGroupHidden').val(gid);
             var $disp = $('#groupMembersDisplay');
             if (!gid || !groupsMap[gid]) {
                 $disp.html('<div class="lf-members-empty"><i class="fa fa-users me-2"></i>Select a group to see its members.</div>');
@@ -1013,9 +1014,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
             refreshJoinWarning();
         });
 
-        // Keep groupClientIDDisplay in sync with client selection
-        $('#loan_client').on('change', function(){
-            $('#groupClientIDDisplay').val($(this).val() || '');
+        // Keep groupClientIDDisplay in sync with client selection (visible input -> hidden id)
+        $('#loanClientSearch').on('input change', function(){
+            var raw = this.value || '';
+            var m = raw.match(/\(([^)]+)\)$/);
+            var id = m ? m[1] : '';
+            $('#loan_client').val(id);
+            $('#groupClientIDDisplay').val(id || '');
             if ($('#joinGroupPanel').is(':visible')) {
                 refreshJoinWarning();
             }
@@ -1023,14 +1028,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
 
         // Form submit: validate group membership uniqueness
         $('#loanForm').on('submit', function(e){
-            var loanType = $('select[name="Loan_Type"]').val();
-            if (loanType !== '3') return true;
+            var rawLoanType = $('#Loan_Type').val() || '';
+            var mlt = rawLoanType.match(/\((\d+)\)$/);
+            var loanType = mlt ? mlt[1] : rawLoanType;
+            if (String(loanType) !== '3') return true;
             var action = $('input[name="group_action"]:checked').val();
             var selClient = $('#loan_client').val() || '';
             if (!selClient) return true;
             var clientGroups = getClientGroups(selClient);
             if (action === 'join') {
-                var jgid = $('#joinGroupSelect').val();
+                var jgid = $('#joinGroupHidden').val();
                 if (jgid && groupsMap[jgid]) {
                     var inThisGroup = groupsMap[jgid].members &&
                         groupsMap[jgid].members.some(function(m){ return m.id === selClient; });
@@ -1059,7 +1066,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         });
 
         // Initialize interest rate id and total rate if a loan type is preselected
-        var initialType = $('select[name="Loan_Type"]').val();
+        var initialTypeRaw = $('#Loan_Type').val() || '';
+        var initialTypeMatch = initialTypeRaw.match(/\((\d+)\)$/);
+        var initialType = initialTypeMatch ? initialTypeMatch[1] : initialTypeRaw;
         if (initialType) {
             setInterestRateFieldsByType(initialType);
             populatePeriodsByType(initialType);
@@ -1137,7 +1146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                 return;
             }
             // For Salary loans, periods 6/12 count as 1 (monthly payments)
-            var loanType = $('select[name="Loan_Type"]').val();
+            var rawLoanType = $('#Loan_Type').val() || '';
+            var ltMatch = rawLoanType.match(/\((\d+)\)$/);
+            var loanType = ltMatch ? ltMatch[1] : rawLoanType;
             var periodMult = periods;
             if (loanType === '2' && (periods === 6 || periods === 12)) {
                 periodMult = 1;
@@ -1163,6 +1174,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         $('#Loan_Amount').on('input change', function(){ computeTotalInterest(); computeTotalAmount(); });
         $('#Total_Interest_Rate').on('input change', function(){ computeTotalInterest(); computeTotalAmount(); });
         $('#No_of_Periods').on('change', computeTotalAmount);
+        // when user selects a period from the datalist, update hidden numeric field
+        $('#No_of_Periods_display').on('input change', function(){
+            var raw = this.value || '';
+            var m = raw.match(/\((\d+)\)$/);
+            var v = m ? m[1] : (raw || '');
+            $('#No_of_Periods').val(v);
+            $('#No_of_Periods').trigger('change');
+        });
         $('#No_of_Months').on('input change', computeTotalAmount);
         $('#Total_Interest').on('input change', computeTotalAmount);
 

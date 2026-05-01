@@ -611,17 +611,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                     <div id="groupFilterRow" class="row g-3 mb-3" style="display:none">
                         <div class="col-md-5">
                             <label class="form-label">Group</label>
-                            <select id="groupSelect" class="form-select" style="width:100%">
-                                <option value="">— All Groups —</option>
-                            </select>
+                            <input id="groupInput" list="groupList" class="form-control" placeholder="Select a group...">
+                            <input type="hidden" id="groupHidden" value="">
+                            <datalist id="groupList"></datalist>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label">Group Info</label>
+                            <div id="groupInfoPanel" class="ll-info-panel" style="display:none">
+                                <div id="groupInfoText" class="ll-info-value">—</div>
+                            </div>
                         </div>
                     </div>
                     <div class="row g-3 align-items-end">
                         <div class="col-md-7">
                             <label class="form-label">Loan</label>
-                            <select id="loanSelect" class="form-select" style="width:100%">
-                                <option value="">— Select an approved loan —</option>
-                            </select>
+                            <input id="loanInput" list="loanList" class="form-control" placeholder="Select an approved loan...">
+                            <input type="hidden" id="loanHidden" value="">
+                            <datalist id="loanList"></datalist>
                         </div>
                         <div class="col-md-2 col-sm-6">
                             <button type="button" id="btnPreview" class="btn btn-ll-primary w-100">
@@ -765,25 +771,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
         var selectedLoanID = '';
         var ledgerDT = null;
 
-        // Init select2
-        $('#loanSelect').select2({ placeholder:'— Select an approved loan —', allowClear:true, width:'100%' });
-        $('#groupSelect').select2({ placeholder:'— All Groups —', allowClear:true, width:'100%' });
+        // Data structures for datalists
+        var groupsMap = {};
+        var loansLoadedForGroup = '';
 
         // ── Load loans into dropdown (optionally filtered by group) ──
         function loadLoans(groupID) {
             var params = { fetch_approved_loans: 1 };
             if (groupID) params.group_id = groupID;
-            var $sel = $('#loanSelect');
-            $sel.empty().append(new Option('— Select an approved loan —', ''));
+            // populate datalist for loans
+            $('#loanList').empty();
+            $('#loanInput').val('');
+            $('#loanHidden').val('');
+            selectedLoanID = '';
             $.getJSON('loan_ledger.php', params).done(function(res){
                 if (res && res.data) {
                     res.data.forEach(function(l){
                         var label = l.Loan_ID + ' — ' + ((l.Last_Name||'')+', '+(l.First_Name||'')).toUpperCase()
-                                  + ' — ₱' + parseFloat(l.Total_Amount||0).toLocaleString();
-                        $sel.append(new Option(label, l.Loan_ID, false, false));
+                                  + ' — ₱' + parseFloat(l.Total_Amount||0).toLocaleString()
+                                  + ' (' + l.Loan_ID + ')';
+                        $('#loanList').append($('<option>').val(label));
                     });
                 }
-                $sel.val('').trigger('change');  // Reset selection and refresh Select2
+                // reset visible input and selected id
+                $('#loanInput').val('');
+                $('#loanHidden').val('');
+                selectedLoanID = '';
                 $('#spinner').removeClass('show');
             }).fail(function(){ $('#spinner').removeClass('show'); });
         }
@@ -797,14 +810,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
             if (groupsLoaded) return;
             $.getJSON('loan_ledger.php', { fetch_groups: 1 }).done(function(res){
                 if (res && res.data) {
-                    $('#groupSelect').empty().append(new Option('— All Groups —', ''));
+                    $('#groupList').empty();
                     res.data.forEach(function(g){
                         var label = g.Group_ID
                             + (g.Info ? ' — ' + g.Info : '')
-                            + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')';
-                        $('#groupSelect').append(new Option(label, g.Group_ID, false, false));
+                            + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')'
+                            + ' (' + g.Group_ID + ')';
+                        $('#groupList').append($('<option>').val(label));
+                        groupsMap[g.Group_ID] = g;
                     });
-                    $('#groupSelect').val('').trigger('change');
                     groupsLoaded = true;
                 }
             });
@@ -824,7 +838,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 $btn.removeClass('active');
                 $('#toggleGroupLabel').text('Filter by Group');
                 $('#groupFilterRow').slideUp(200);
-                $('#groupSelect').val('').trigger('change');
+                $('#groupInput').val('');
+                $('#groupHidden').val('');
+                $('#groupInfoPanel').hide();
                 selectedLoanID = '';
                 $('#loanSummary').hide();
                 $('#ledgerSection').hide();
@@ -832,19 +848,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 loadLoans('');
             }
         });
-
-        // ── Group selection → filter loans + show group info ──
-        $('#groupSelect').on('change', function(){
-            var gid = $(this).val();
-            if (gid) {
-                // Show info panel
-                var selText = $('#groupSelect option:selected').text();
+        // ── Group input → filter loans + show group info ──
+        $('#groupInput').on('input change', function(){
+            var raw = this.value || '';
+            var m = raw.match(/\(([^)]+)\)$/);
+            var gid = m ? m[1] : '';
+            $('#groupHidden').val(gid);
+            if (gid && groupsMap[gid]) {
+                var g = groupsMap[gid];
+                var selText = g.Group_ID + (g.Info ? ' — ' + g.Info : '') + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')';
                 $('#groupInfoText').text(selText);
+                $('#groupInfoPanel').show();
+            } else if (gid) {
+                // fallback: show raw
+                $('#groupInfoText').text(raw);
                 $('#groupInfoPanel').show();
             } else {
                 $('#groupInfoPanel').hide();
             }
-            // Reset loan select and reload filtered
+            // Reset loan selection and reload filtered
             selectedLoanID = '';
             $('#loanSummary').hide();
             $('#ledgerSection').hide();
@@ -858,7 +880,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
 
         // ── Preview button ──
         $('#btnPreview').on('click', function(){
-            selectedLoanID = $('#loanSelect').val();
+            // ensure selectedLoanID is set from visible input if possible
+            if (!selectedLoanID) {
+                var raw = $('#loanInput').val() || '';
+                var m = raw.match(/\(([^)]+)\)$/);
+                selectedLoanID = m ? m[1] : '';
+                $('#loanHidden').val(selectedLoanID);
+            }
             if (!selectedLoanID) {
                 Swal.fire({icon:'warning',title:'Select a loan',text:'Please choose a loan first.'});
                 return;
@@ -936,6 +964,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['approve_payment'])) {
                 });
             }, 'json');
         }
+
+        // When user picks a loan from the datalist, capture the Loan_ID
+        $('#loanInput').on('input change', function(){
+            var raw = this.value || '';
+            var m = raw.match(/\(([^)]+)\)$/);
+            var lid = m ? m[1] : '';
+            $('#loanHidden').val(lid);
+            selectedLoanID = lid;
+        });
 
         // ── Approve (Pay) a single payment ──
         $(document).on('click', '.btn-approve', function(){
