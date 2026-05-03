@@ -23,7 +23,9 @@ if ($stmt) {
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if ($result && $row = mysqli_fetch_assoc($result)) {
-        if (password_verify($password, $row['Password'])) {
+        $isHashed = strlen($row['Password']) >= 60 && $row['Password'][0] === '$';
+        $passwordOk = $isHashed ? password_verify($password, $row['Password']) : ($password === $row['Password']);
+        if ($passwordOk) {
             $_SESSION['userId'] = $row['id'];
             $_SESSION['email'] = $row['Email_Address'];
             $_SESSION['userTypeId'] = (int)$row['User_Type_ID'];

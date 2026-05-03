@@ -112,6 +112,36 @@ if (isset($_GET['fetch_pic'])) {
     exit;
 }
 
+// Co-maker fetch endpoint
+if (isset($_GET['fetch_comaker'])) {
+    $cid = trim($_GET['fetch_comaker'] ?? '');
+    $out = ['data' => []];
+    if ($cid !== '') {
+        $csql = "SELECT Last_Name, First_Name, Middle_Name, Age, Gender, Date_Of_Birth, Place_Of_Birth,
+                       Civil_Status, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town,
+                       City_Municipality, Province, Zip_Code, No_Of_Children, ID_Presented, ID_Reference_No,
+                       Income_Source, Other_Income_Source, Montly_Income, Business_Name, Business_Address,
+                       Name_Of_Spouse, Primary_Bank, Name_Of_Lending, Acquaintance_Duration, Relationship
+                FROM tbl_comaker_info WHERE Client_ID = ?";
+        $cstmt = mysqli_prepare($conn, $csql);
+        if ($cstmt) {
+            mysqli_stmt_bind_param($cstmt, 's', $cid);
+            mysqli_stmt_execute($cstmt);
+            $cres = mysqli_stmt_get_result($cstmt);
+            if ($cres) {
+                while ($crow = mysqli_fetch_assoc($cres)) {
+                    $out['data'][] = $crow;
+                }
+                mysqli_free_result($cres);
+            }
+            mysqli_stmt_close($cstmt);
+        }
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($out);
+    exit;
+}
+
 // Simple JSON endpoint for client-side fetching
 if (isset($_GET['fetch_clients'])) {
     $out = ['data' => []];
@@ -405,6 +435,13 @@ if (isset($_GET['fetch_clients'])) {
                                             <div class="col-md-3"><div class="text-muted small">Date of Birth</div><div id="cvSpouseDOB"></div></div>
                                             <div class="col-md-2"><div class="text-muted small">Work</div><div id="cvSpouseWork"></div></div>
                                             <div class="col-md-2"><div class="text-muted small">Income</div><div id="cvSpouseIncome"></div></div>
+                                        </div>
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2 mt-3">Co-maker Information</h6>
+                                        <div id="cvComakerSection">
+                                            <div id="cvComakerLoading" class="text-muted small">Loading...</div>
+                                            <div id="cvComakerNone" class="text-muted small" style="display:none">No co-maker found.</div>
+                                            <div id="cvComakerList"></div>
                                         </div>
 
                                     </div>
@@ -802,7 +839,64 @@ if (isset($_GET['fetch_clients'])) {
             m.find('#edit_Spouse_DOB').val(b.data('spdob')||'');
             m.find('#edit_Spouse_Work').val(b.data('spwork')||'');
             m.find('#edit_Spouse_Income').val(b.data('spincome')||'');
-        });
+            // Fetch co-maker info
+            var clientIdStr = b.data('clientid') || '';
+            m.find('#cvComakerList').empty();
+            m.find('#cvComakerLoading').show();
+            m.find('#cvComakerNone').hide().text('No co-maker found.');
+            if (clientIdStr) {
+                $.getJSON('client_record.php?fetch_comaker=' + encodeURIComponent(clientIdStr), function(resp) {
+                    m.find('#cvComakerLoading').hide();
+                    if (resp.data && resp.data.length > 0) {
+                        resp.data.forEach(function(cm, idx) {
+                            var h = '<div class="border border-secondary rounded p-2 mb-2">';
+                            if (resp.data.length > 1) h += '<div class="fw-semibold mb-2">Co-maker ' + (idx + 1) + '</div>';
+                            h += '<div class="row">';
+                            h += '<div class="col-md-4"><div class="text-muted small">Last Name</div><div>' + esc(cm.Last_Name) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">First Name</div><div>' + esc(cm.First_Name) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Middle Name</div><div>' + esc(cm.Middle_Name) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-2"><div class="text-muted small">Age</div><div>' + esc(cm.Age) + '</div></div>';
+                            h += '<div class="col-md-3"><div class="text-muted small">Gender</div><div>' + esc(cm.Gender) + '</div></div>';
+                            h += '<div class="col-md-3"><div class="text-muted small">Date of Birth</div><div>' + esc(cm.Date_Of_Birth) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Place of Birth</div><div>' + esc(cm.Place_Of_Birth) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-4"><div class="text-muted small">Civil Status</div><div>' + esc(cm.Civil_Status) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Mobile No</div><div>' + esc(cm.Mobile_No) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Email</div><div>' + esc(cm.Email_Address) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-6"><div class="text-muted small">Address</div><div>' + [cm.House_Street_Bldng, cm.Barangay_Town, cm.City_Municipality, cm.Province, cm.Zip_Code].filter(Boolean).map(esc).join(', ') + '</div></div>';
+                            h += '<div class="col-md-2"><div class="text-muted small">No. of Children</div><div>' + esc(cm.No_Of_Children) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Relationship</div><div>' + esc(cm.Relationship) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-4"><div class="text-muted small">Income Source</div><div>' + esc(cm.Income_Source) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Monthly Income</div><div>' + esc(cm.Montly_Income) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Other Income Source</div><div>' + esc(cm.Other_Income_Source) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-4"><div class="text-muted small">Business Name</div><div>' + esc(cm.Business_Name) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Business Address</div><div>' + esc(cm.Business_Address) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Spouse Name</div><div>' + esc(cm.Name_Of_Spouse) + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-4"><div class="text-muted small">Primary Bank</div><div>' + esc(cm.Primary_Bank) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Name of Lending</div><div>' + esc(cm.Name_Of_Lending) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">Acquaintance Duration</div><div>' + esc(cm.Acquaintance_Duration) + (cm.Acquaintance_Duration ? ' yr(s)' : '') + '</div></div>';
+                            h += '</div><div class="row mt-1">';
+                            h += '<div class="col-md-4"><div class="text-muted small">ID Presented</div><div>' + esc(cm.ID_Presented) + '</div></div>';
+                            h += '<div class="col-md-4"><div class="text-muted small">ID Reference No</div><div>' + esc(cm.ID_Reference_No) + '</div></div>';
+                            h += '</div></div>';
+                            m.find('#cvComakerList').append(h);
+                        });
+                    } else {
+                        m.find('#cvComakerNone').show();
+                    }
+                }).fail(function() {
+                    m.find('#cvComakerLoading').hide();
+                    m.find('#cvComakerNone').show().text('Failed to load co-maker data.');
+                });
+            } else {
+                m.find('#cvComakerLoading').hide();
+                m.find('#cvComakerNone').show();
+            }        });
 
         // Profile pic zoom
         $(document).on('click', '#clientProfPicWrap', function() {
