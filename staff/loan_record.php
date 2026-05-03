@@ -6,24 +6,22 @@ require_once __DIR__ . '/../db/dbcon.php';
 if (isset($_GET['fetch_loans'])) {
     $out = ['data' => []];
     $filterBranch = $_SESSION['branchId'] ?? '';
-    if ($filterBranch !== '') {
-        $fsql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
-                        l.Loan_Type, l.Effective_Date, l.Maturity_Date, l.Loan_Amount, l.Total_Amount, l.Loan_Status
-                 FROM tbl_loan_info l
-                 LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
-                 WHERE c.Branch_ID = ?
-                 ORDER BY l.id DESC";
-        $fstmt = mysqli_prepare($conn, $fsql);
-        if ($fstmt) {
-            mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
-            mysqli_stmt_execute($fstmt);
-            $res = mysqli_stmt_get_result($fstmt);
-            if ($res) {
-                while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
-                mysqli_free_result($res);
-            }
-            mysqli_stmt_close($fstmt);
+    $fsql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
+                    l.Loan_Type, l.Effective_Date, l.Maturity_Date, l.Loan_Amount, l.Total_Amount, l.Loan_Status
+             FROM tbl_loan_info l
+             LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID"
+        . ($filterBranch !== '' ? ' WHERE c.Branch_ID = ?' : '')
+        . ' ORDER BY l.id DESC';
+    $fstmt = mysqli_prepare($conn, $fsql);
+    if ($fstmt) {
+        if ($filterBranch !== '') mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
+        mysqli_stmt_execute($fstmt);
+        $res = mysqli_stmt_get_result($fstmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
+            mysqli_free_result($res);
         }
+        mysqli_stmt_close($fstmt);
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);

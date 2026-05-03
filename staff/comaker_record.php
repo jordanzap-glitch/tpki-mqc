@@ -81,29 +81,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
 if (isset($_GET['fetch_comakers'])) {
     $out = ['data' => []];
     $filterBranch = $_SESSION['branchId'] ?? '';
-    if ($filterBranch !== '') {
-        $fsql = "SELECT cm.id, cm.Comaker_ID, cm.Last_Name, cm.First_Name, cm.Middle_Name,
-                        cm.Age, cm.Gender, cm.Date_Of_Birth, cm.Place_Of_Birth, cm.Civil_Status,
-                        cm.Mobile_No, cm.Email_Address, cm.House_Street_Bldng, cm.Barangay_Town,
-                        cm.City_Municipality, cm.Province, cm.Zip_Code, cm.No_Of_Children,
-                        cm.ID_Presented, cm.ID_Reference_No, cm.Income_Source, cm.Other_Income_Source,
-                        cm.Montly_Income, cm.Business_Name, cm.Business_Address, cm.Name_Of_Spouse,
-                        cm.Primary_Bank, cm.Name_Of_Lending, cm.Acquaintance_Duration, cm.Relationship
-                 FROM tbl_comaker_info cm
-                 INNER JOIN tbl_client_info c ON cm.Client_ID = c.Client_ID
-                 WHERE c.Branch_ID = ?
-                 ORDER BY cm.id DESC";
-        $fstmt = mysqli_prepare($conn, $fsql);
-        if ($fstmt) {
-            mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
-            mysqli_stmt_execute($fstmt);
-            $res = mysqli_stmt_get_result($fstmt);
-            if ($res) {
-                while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
-                mysqli_free_result($res);
-            }
-            mysqli_stmt_close($fstmt);
+    $fsql = "SELECT cm.id, cm.Comaker_ID, cm.Last_Name, cm.First_Name, cm.Middle_Name,
+                    cm.Age, cm.Gender, cm.Date_Of_Birth, cm.Place_Of_Birth, cm.Civil_Status,
+                    cm.Mobile_No, cm.Email_Address, cm.House_Street_Bldng, cm.Barangay_Town,
+                    cm.City_Municipality, cm.Province, cm.Zip_Code, cm.No_Of_Children,
+                    cm.ID_Presented, cm.ID_Reference_No, cm.Income_Source, cm.Other_Income_Source,
+                    cm.Montly_Income, cm.Business_Name, cm.Business_Address, cm.Name_Of_Spouse,
+                    cm.Primary_Bank, cm.Name_Of_Lending, cm.Acquaintance_Duration, cm.Relationship
+             FROM tbl_comaker_info cm
+             INNER JOIN tbl_client_info c ON cm.Client_ID = c.Client_ID"
+        . ($filterBranch !== '' ? ' WHERE c.Branch_ID = ?' : '')
+        . ' ORDER BY cm.id DESC';
+    $fstmt = mysqli_prepare($conn, $fsql);
+    if ($fstmt) {
+        if ($filterBranch !== '') mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
+        mysqli_stmt_execute($fstmt);
+        $res = mysqli_stmt_get_result($fstmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
+            mysqli_free_result($res);
         }
+        mysqli_stmt_close($fstmt);
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);

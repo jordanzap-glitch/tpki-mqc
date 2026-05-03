@@ -28,7 +28,8 @@ if ($_staffUid > 0) {
         mysqli_stmt_bind_result($_bstmt, $_branchId, $_branchName);
         mysqli_stmt_fetch($_bstmt);
         mysqli_stmt_close($_bstmt);
-        $_SESSION['branchId']   = $_branchId   ?? '';
+        // BR-001 is the head-office account — show all branches (no filter)
+        $_SESSION['branchId']   = (($_branchId ?? '') === 'BR-001') ? '' : ($_branchId ?? '');
         $_SESSION['branchName'] = $_branchName ?? '';
     }
     unset($_bstmt, $_staffUid, $_branchId, $_branchName);

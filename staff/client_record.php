@@ -146,28 +146,28 @@ if (isset($_GET['fetch_comaker'])) {
 if (isset($_GET['fetch_clients'])) {
     $out = ['data' => []];
     $filterBranch = $_SESSION['branchId'] ?? '';
-    if ($filterBranch !== '') {
-        $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname,
-                       Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion,
-                       Mother_Last_Name, Mother_First_Name, Mother_Middle_Name,
-                       Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province,
-                       Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No,
-                       Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income,
-                       created_at, exp_id AS Exp_ID
-                FROM tbl_client_info WHERE Branch_ID = ? ORDER BY id DESC";
-        $fstmt = mysqli_prepare($conn, $sql);
-        if ($fstmt) {
-            mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
-            mysqli_stmt_execute($fstmt);
-            $res = mysqli_stmt_get_result($fstmt);
-            if ($res) {
-                while ($row = mysqli_fetch_assoc($res)) {
-                    $out['data'][] = $row;
-                }
-                mysqli_free_result($res);
+    $sql = "SELECT id, Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname,
+                   Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion,
+                   Mother_Last_Name, Mother_First_Name, Mother_Middle_Name,
+                   Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province,
+                   Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No,
+                   Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income,
+                   created_at, exp_id AS Exp_ID
+            FROM tbl_client_info"
+        . ($filterBranch !== '' ? ' WHERE Branch_ID = ?' : '')
+        . ' ORDER BY id DESC';
+    $fstmt = mysqli_prepare($conn, $sql);
+    if ($fstmt) {
+        if ($filterBranch !== '') mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
+        mysqli_stmt_execute($fstmt);
+        $res = mysqli_stmt_get_result($fstmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $out['data'][] = $row;
             }
-            mysqli_stmt_close($fstmt);
+            mysqli_free_result($res);
         }
+        mysqli_stmt_close($fstmt);
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);
