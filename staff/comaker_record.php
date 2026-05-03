@@ -509,12 +509,8 @@ if (isset($_GET['fetch_comakers'])) {
                             + 'data-business_name="'+(row.Business_Name||'')+'" data-business_address="'+(row.Business_Address||'')+'" data-name_of_spouse="'+(row.Name_Of_Spouse||'')+'" data-primary_bank="'+(row.Primary_Bank||'')+'" data-name_of_lending="'+(row.Name_Of_Lending||'')+'" data-acquaintance_duration="'+(row.Acquaintance_Duration||'')+'" data-relationship="'+(row.Relationship||'')+'">'
                             + '<i class="bi bi-pencil"></i></button>';
 
-                        var deleteBtn = '<form method="post" class="d-inline delete-form">'
-                            + '<input type="hidden" name="delete_id" value="'+id+'">'
-                            + '<button type="button" class="btn btn-sm btn-danger del-comaker"><i class="bi bi-trash"></i></button>'
-                            + '</form>';
-
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + deleteBtn + '</div>';
+                        // Delete button intentionally hidden for staff
+                        return '<div class="text-nowrap">' + viewBtn + editBtn + '</div>';
                     } }
             ]
         });
@@ -581,12 +577,7 @@ if (isset($_GET['fetch_comakers'])) {
             modal.find('#edit_Relationship').val(button.data('relationship') || '');
         });
 
-        // Delete confirmation
-        $(document).on('click', '.del-comaker', function(e){
-            e.preventDefault();
-            var form = $(this).closest('form');
-            Swal.fire({title:'Delete record?', text:'This action cannot be undone.', icon:'warning', showCancelButton:true, confirmButtonText:'Delete', confirmButtonColor:'#d33'}).then((res)=>{ if(res.isConfirmed) form.submit(); });
-        });
+        // Delete handler removed: delete action hidden in UI for staff
     });
     </script>
     <?php

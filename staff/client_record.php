@@ -726,12 +726,9 @@ if (isset($_GET['fetch_clients'])) {
 
                         var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-client me-1" data-bs-toggle="modal" data-bs-target="#clientViewModal"' + attrs + '><i class="bi bi-eye"></i></button>';
                         var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-client me-1" data-bs-toggle="modal" data-bs-target="#clientEditModal"' + attrs + '><i class="bi bi-pencil"></i></button>';
-                        var deleteBtn = '<form method="post" class="d-inline delete-form" style="display:inline">'
-                            + '<input type="hidden" name="delete_id" value="'+esc(row.id)+'">'
-                            + '<button type="button" class="btn btn-sm btn-danger del-client"><i class="bi bi-trash"></i></button>'
-                            + '</form>';
 
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + deleteBtn + '</div>';
+                        // Delete button intentionally hidden for staff
+                        return '<div class="text-nowrap">' + viewBtn + editBtn + '</div>';
                     } }
             ]
         });
@@ -916,23 +913,7 @@ if (isset($_GET['fetch_clients'])) {
             }
         });
 
-        // Delete confirmation
-        $(document).on('click', '.del-client', function(e) {
-            e.preventDefault();
-            var form = $(this).closest('form');
-            Swal.fire({
-                title: 'Delete record?',
-                text: 'This action cannot be undone.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Delete',
-                confirmButtonColor: '#d33'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
-        });
+        // Delete handler removed: delete action hidden in UI for staff
     });
     </script>
     <?php

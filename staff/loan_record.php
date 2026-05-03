@@ -364,8 +364,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         var loanAmt = row.Loan_Amount || '';
                         var totalAmt = row.Total_Amount || '';
                         var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-loan me-1" data-id="'+id+'" title="View">' + '<i class="bi bi-eye"></i></button>';
-                        var delBtn = '<button type="button" class="btn btn-sm btn-danger delete-loan" data-id="'+id+'" title="Delete">' + '<i class="bi bi-trash"></i></button>';
-                        return '<div class="text-nowrap">' + viewBtn + delBtn + '</div>';
+                        // Delete button intentionally hidden for staff view
+                        return '<div class="text-nowrap">' + viewBtn + '</div>';
                     } },
                 { data: 'Loan_Status', render: function(data, type, row){
                         var s = (data||'').toString().trim().toUpperCase();
@@ -507,20 +507,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
             });
         });
 
-        // Delete
-        $(document).on('click', '.delete-loan', function(){
-            var id = $(this).data('id');
-            Swal.fire({ title: 'Delete loan?', text:'This cannot be undone', icon:'warning', showCancelButton:true }).then(function(res){
-                if (res.isConfirmed) {
-                    $.post('loan_record.php', { delete_loan:1, id: id }, function(resp){
-                        if (resp && resp.success) {
-                            $('#recordsTable').DataTable().ajax.reload(null, false);
-                            Swal.fire('Deleted','Loan removed','success');
-                        } else Swal.fire('Error','Unable to delete','error');
-                    }, 'json').fail(function(){ Swal.fire('Error','Server error','error'); });
-                }
-            });
-        });
+        // Delete handler removed: delete action hidden in UI for staff
 
         // Approve / Deny handlers
         $(document).on('click', '.approve-loan, .deny-loan', function(){
