@@ -1,17 +1,29 @@
 <?php
 include 'includes/init.php';
-include __DIR__ . '/../db/dbcon.php';
+require_once __DIR__ . '/../db/dbcon.php';
 
 // Simple JSON endpoint for loan-side fetching
 if (isset($_GET['fetch_loans'])) {
     $out = ['data' => []];
-    $sql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name, l.Loan_Type, l.Effective_Date, l.Maturity_Date, l.Loan_Amount, l.Total_Amount, l.Loan_Status FROM tbl_loan_info l LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID ORDER BY l.id DESC";
-    $res = mysqli_query($conn, $sql);
-    if ($res) {
-        while ($row = mysqli_fetch_assoc($res)) {
-            $out['data'][] = $row;
+    $filterBranch = $_SESSION['branchId'] ?? '';
+    if ($filterBranch !== '') {
+        $fsql = "SELECT l.id, l.Loan_ID, l.Client_ID, c.Last_Name, c.First_Name,
+                        l.Loan_Type, l.Effective_Date, l.Maturity_Date, l.Loan_Amount, l.Total_Amount, l.Loan_Status
+                 FROM tbl_loan_info l
+                 LEFT JOIN tbl_client_info c ON l.Client_ID = c.Client_ID
+                 WHERE c.Branch_ID = ?
+                 ORDER BY l.id DESC";
+        $fstmt = mysqli_prepare($conn, $fsql);
+        if ($fstmt) {
+            mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
+            mysqli_stmt_execute($fstmt);
+            $res = mysqli_stmt_get_result($fstmt);
+            if ($res) {
+                while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
+                mysqli_free_result($res);
+            }
+            mysqli_stmt_close($fstmt);
         }
-        mysqli_free_result($res);
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);
@@ -129,6 +141,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
     .table-responsive { scrollbar-color: #000 #333; scrollbar-width: thin; }
     .table th:first-child, .table td:first-child { width:44px; padding:0.35rem 0.5rem; text-align:center; vertical-align:middle; }
     .table tbody td { text-transform: none; }
+    /* Enhanced visibility for inputs and search on loan records */
+    .dataTables_wrapper .dataTables_filter input,
+    #recordsTable .form-control,
+    .modal-content .form-control {
+        background-color: rgba(255,255,255,0.04);
+        color: #ffffff;
+        border: 1px solid rgba(255,255,255,0.12);
+        padding: .35rem .6rem;
+        border-radius: .25rem;
+        transition: box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    #recordsTable .form-control:focus,
+    .modal-content .form-control:focus {
+        outline: none;
+        border-color: rgba(61,242,118,0.6);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.12);
+        background-color: rgba(255,255,255,0.06);
+        color: #ffffff;
+    }
+
+    /* Light mode overrides */
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input,
+    [data-theme="light"] #recordsTable .form-control,
+    [data-theme="light"] .modal-content .form-control {
+        background-color: #ffffff;
+        color: #212529;
+        border: 1px solid #ced4da;
+    }
+
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input:focus,
+    [data-theme="light"] #recordsTable .form-control:focus,
+    [data-theme="light"] .modal-content .form-control:focus {
+        border-color: rgba(61,242,118,0.5);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.06);
+        background-color: #ffffff;
+        color: #212529;
+    }
     </style>
 </head>
 
@@ -167,11 +218,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                                    <th>Loan Amount</th>
                                    <th>Total Amount</th>
                                    <th>Action</th>
-                                   <th style="width:160px;">Status</th>
+                                   <th style="width:110px;">Status</th>
+                                   <th style="width:110px;">Approval</th>
                                </tr>
                            </thead>
                            <tbody>
-                               <tr><td colspan="10" class="text-center">No records loaded</td></tr>
+                               <tr><td colspan="11" class="text-center">No records loaded</td></tr>
                            </tbody>
                        </table>
 
@@ -272,6 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../js/main.js?v=<?php echo filemtime(__DIR__ . '/../js/main.js'); ?>"></script>
     <script>
     $(document).ready(function() {
         $('#recordsTable').DataTable({
@@ -311,9 +364,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         var loanAmt = row.Loan_Amount || '';
                         var totalAmt = row.Total_Amount || '';
                         var viewBtn = '<button type="button" class="btn btn-sm btn-primary view-loan me-1" data-id="'+id+'" title="View">' + '<i class="bi bi-eye"></i></button>';
-                        var editBtn = '<button type="button" class="btn btn-sm btn-warning edit-loan me-1" data-id="'+id+'" title="Edit">' + '<i class="bi bi-pencil"></i></button>';
                         var delBtn = '<button type="button" class="btn btn-sm btn-danger delete-loan" data-id="'+id+'" title="Delete">' + '<i class="bi bi-trash"></i></button>';
-                        return '<div class="text-nowrap">' + viewBtn + editBtn + delBtn + '</div>';
+                        return '<div class="text-nowrap">' + viewBtn + delBtn + '</div>';
                     } },
                 { data: 'Loan_Status', render: function(data, type, row){
                         var s = (data||'').toString().trim().toUpperCase();
@@ -322,10 +374,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_status'])) {
                         if (s === 'PENDING') cls = 'bg-warning text-dark';
                         if (s === 'APPROVED') cls = 'bg-success';
                         if (s === 'DENIED') cls = 'bg-danger';
-                        var badge = '<span class="badge '+cls+'">'+s+'</span>';
-                        var btns = ' <button class="btn btn-sm btn-success approve-loan" data-id="'+(row.id||'')+'" title="Approve"><i class="bi bi-check2"></i></button>'
-                                 + ' <button class="btn btn-sm btn-danger deny-loan" data-id="'+(row.id||'')+'" title="Deny">âœ–</button>';
-                        return badge + btns;
+                        return '<span class="badge '+cls+'">'+s+'</span>';
+                    }
+                },
+                { data: null, orderable: false, render: function(data, type, row){
+                        var id = row.id || '';
+                        var appBtn = '<button class="btn btn-sm btn-success approve-loan me-1" data-id="'+id+'" title="Approve"><i class="fa fa-check"></i></button>';
+                        var dnyBtn = '<button class="btn btn-sm btn-danger deny-loan" data-id="'+id+'" title="Deny"><i class="fa fa-times"></i></button>';
+                        return '<div class="text-nowrap">'+appBtn+dnyBtn+'</div>';
                     }
                 },
             ],

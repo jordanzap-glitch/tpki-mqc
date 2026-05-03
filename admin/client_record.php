@@ -90,6 +90,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
     }
 }
 
+// Profile picture endpoint (merged from client_pic.php)
+if (isset($_GET['fetch_pic'])) {
+    $pid = intval($_GET['fetch_pic']);
+    if ($pid <= 0) { http_response_code(400); exit; }
+    $pstmt = mysqli_prepare($conn, "SELECT Prof_Pic FROM tbl_client_info WHERE id = ? LIMIT 1");
+    if (!$pstmt) { http_response_code(500); exit; }
+    mysqli_stmt_bind_param($pstmt, 'i', $pid);
+    mysqli_stmt_execute($pstmt);
+    mysqli_stmt_bind_result($pstmt, $blob);
+    mysqli_stmt_fetch($pstmt);
+    mysqli_stmt_close($pstmt);
+    if (empty($blob)) { http_response_code(404); exit; }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->buffer($blob);
+    $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!in_array($mime, $allowed, true)) { http_response_code(415); exit; }
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: private, max-age=300');
+    echo $blob;
+    exit;
+}
+
 // Simple JSON endpoint for client-side fetching
 if (isset($_GET['fetch_clients'])) {
     $out = ['data' => []];
@@ -199,6 +221,26 @@ if (isset($_GET['fetch_clients'])) {
         background-color: #ffffff;
         color: #212529;
     }
+    /* Profile pic zoom overlay */
+    #picZoomOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0,0,0,0.85);
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+    }
+    #picZoomOverlay.active { display: flex; }
+    #picZoomOverlay img {
+        max-width: 90vw;
+        max-height: 90vh;
+        border-radius: 8px;
+        box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        pointer-events: none;
+    }
+    #clientProfPicWrap { cursor: zoom-in; }
     </style>
 </head>
 
@@ -262,7 +304,14 @@ if (isset($_GET['fetch_clients'])) {
                                     </div>
                                     <div class="modal-body">
                                         <div class="d-flex mb-3">
-                                            <div id="clientProfPic" class="me-3" style="width:96px;height:96px;background:#222;display:flex;align-items:center;justify-content:center;border-radius:6px;overflow:hidden"></div>
+                                            <div id="clientProfPicWrap" class="me-3" style="width:96px;height:96px;background:#222;display:flex;align-items:center;justify-content:center;border-radius:6px;overflow:hidden;flex-shrink:0" title="Click to zoom">
+                                                <img id="cvProfPicImg" src="" alt="Profile" style="width:100%;height:100%;object-fit:cover;display:none">
+                                                <span id="cvProfPicPlaceholder" class="text-muted" style="font-size:2rem"><i class="bi bi-person-fill"></i></span>
+                                            </div>
+                                            <!-- Zoom overlay -->
+                                            <div id="picZoomOverlay">
+                                                <img id="picZoomImg" src="" alt="Profile Zoom">
+                                            </div>
                                             <div>
                                                 <h5 id="cvFullName" class="mb-0"></h5>
                                                 <div class="text-muted" id="cvClientID"></div>
@@ -646,7 +695,21 @@ if (isset($_GET['fetch_clients'])) {
             var b = $(event.relatedTarget);
             var m = $(this);
 
-            m.find('#clientProfPic').html('');
+            var clientId = b.data('id')||'';
+            var img = m.find('#cvProfPicImg');
+            var placeholder = m.find('#cvProfPicPlaceholder');
+            img.hide().attr('src', '');
+            placeholder.show();
+            if (clientId) {
+                var picUrl = 'client_record.php?fetch_pic=' + encodeURIComponent(clientId);
+                img.off('load error').on('load', function() {
+                    placeholder.hide();
+                    img.show();
+                }).on('error', function() {
+                    img.hide();
+                    placeholder.show();
+                }).attr('src', picUrl);
+            }
             var fullName = (b.data('first')||'') + ' ' + (b.data('middle')||'') + ' ' + (b.data('last')||'');
             m.find('#cvFullName').text(fullName.trim());
             m.find('#cvClientID').text(b.data('clientid')||'');
@@ -730,6 +793,24 @@ if (isset($_GET['fetch_clients'])) {
             m.find('#edit_Spouse_DOB').val(b.data('spdob')||'');
             m.find('#edit_Spouse_Work').val(b.data('spwork')||'');
             m.find('#edit_Spouse_Income').val(b.data('spincome')||'');
+        });
+
+        // Profile pic zoom
+        $(document).on('click', '#clientProfPicWrap', function() {
+            var src = $('#cvProfPicImg').attr('src');
+            if (!src) return;
+            $('#picZoomImg').attr('src', src);
+            $('#picZoomOverlay').addClass('active');
+        });
+        $(document).on('click', '#picZoomOverlay', function() {
+            $(this).removeClass('active');
+            $('#picZoomImg').attr('src', '');
+        });
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('#picZoomOverlay').removeClass('active');
+                $('#picZoomImg').attr('src', '');
+            }
         });
 
         // Delete confirmation

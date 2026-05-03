@@ -83,6 +83,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['save_comaker'])) {
         $project_officer = $_SESSION['UserID'];
     }
 
+    // Lookup User_ID from tbl_user for processed_by
+    $processed_by = null;
+    $_uid = (int)($_SESSION['userId'] ?? 0);
+    if ($_uid > 0) {
+        $_pb_stmt = mysqli_prepare($conn, "SELECT User_ID FROM tbl_user WHERE id = ? LIMIT 1");
+        if ($_pb_stmt) {
+            mysqli_stmt_bind_param($_pb_stmt, 'i', $_uid);
+            mysqli_stmt_execute($_pb_stmt);
+            mysqli_stmt_bind_result($_pb_stmt, $processed_by);
+            mysqli_stmt_fetch($_pb_stmt);
+            mysqli_stmt_close($_pb_stmt);
+        }
+    }
+
     // Handle profile picture upload (optional)
     $prof_pic = null;
     if (!empty($_FILES['Prof_Pic']) && $_FILES['Prof_Pic']['error'] === UPLOAD_ERR_OK) {
@@ -93,17 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['save_comaker'])) {
 
     // Prepared INSERT
     $sql = "INSERT INTO tbl_client_info
-                (Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion, Mother_Last_Name, Mother_First_Name, Mother_Middle_Name, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No, Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income, Latitude, Longitude, Project_Officer_ID, Exp_ID, Prof_Pic)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                (Client_ID, Branch_ID, Last_Name, First_Name, Middle_Name, Nickname, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Religion, Mother_Last_Name, Mother_First_Name, Mother_Middle_Name, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, Educational_Attainment, No_Of_Children, ID_Presented, ID_Reference_No, Spouse_Last_Name, Spouse_First_Name, Spouse_Middle_Name, Spouse_Work, Spouse_Nickname, Spouse_Age, Spouse_DOB, Spouse_Income, Latitude, Longitude, Project_Officer_ID, Exp_ID, Prof_Pic, processed_by)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     $stmt = mysqli_prepare($conn, $sql);
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, str_repeat('s', 39), $client_id, $branch_id, $last_name, $first_name, $middle_name, $nickname, $age, $gender, $dob, $pob, $civil, $religion, $mother_last, $mother_first, $mother_middle, $mobile, $email, $house, $barangay, $city, $province, $zip, $edu, $no_children, $id_presented, $id_ref_no, $spouse_last, $spouse_first, $spouse_middle, $spouse_work, $spouse_nick, $spouse_age, $spouse_dob, $spouse_income, $latitude, $longitude, $project_officer, $exp_id, $prof_pic);
+        mysqli_stmt_bind_param($stmt, str_repeat('s', 40), $client_id, $branch_id, $last_name, $first_name, $middle_name, $nickname, $age, $gender, $dob, $pob, $civil, $religion, $mother_last, $mother_first, $mother_middle, $mobile, $email, $house, $barangay, $city, $province, $zip, $edu, $no_children, $id_presented, $id_ref_no, $spouse_last, $spouse_first, $spouse_middle, $spouse_work, $spouse_nick, $spouse_age, $spouse_dob, $spouse_income, $latitude, $longitude, $project_officer, $exp_id, $prof_pic, $processed_by);
 
         // Because Prof_Pic is blob, use send_long_data if available
         if ($prof_pic !== null) {
             // send_long_data requires mysqli_stmt_send_long_data, which expects param index starting at 0
-            // Prof_Pic is now the last param (zero-based index 38)
+            // Prof_Pic is now the second-to-last param (zero-based index 38)
             $param_index = 38;
             mysqli_stmt_send_long_data($stmt, $param_index, $prof_pic);
         }

@@ -15,6 +15,7 @@ if (!empty($_SESSION['userId'])) {
         }
     }
 }
+$navBranchName = htmlspecialchars($_SESSION['branchName'] ?? '');
 ?>
 
 <nav class="navbar navbar-expand bg-secondary navbar-dark sticky-top px-4 py-0">
@@ -25,6 +26,13 @@ if (!empty($_SESSION['userId'])) {
                     <i class="fa fa-bars"></i>
                 </a>
                 <div class="navbar-nav align-items-center ms-auto">
+                    <?php if ($navBranchName): ?>
+                    <div class="nav-item me-3 d-none d-lg-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2" style="background:rgba(61,242,118,0.15);border:1px solid rgba(61,242,118,0.35);color:var(--primary);font-size:.75rem;letter-spacing:.04em;">
+                            <i class="fa fa-map-marker-alt me-1" style="opacity:.7"></i><?php echo $navBranchName; ?>
+                        </span>
+                    </div>
+                    <?php endif; ?>
                     <div class="nav-item me-2">
                         <button id="theme-toggle" class="btn btn-sm-square rounded-circle" title="Toggle Theme" style="background: var(--dark);">
                             <i class="fa fa-moon text-primary"></i>
@@ -35,6 +43,12 @@ if (!empty($_SESSION['userId'])) {
                             <span class="d-none d-lg-inline-flex"><?php echo $displayName; ?></span>
                         </a>
                             <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
+                                <?php if ($navBranchName): ?>
+                                <span class="dropdown-item-text small text-muted d-lg-none">
+                                    <i class="fa fa-map-marker-alt me-1"></i><?php echo $navBranchName; ?>
+                                </span>
+                                <div class="dropdown-divider border-secondary d-lg-none"></div>
+                                <?php endif; ?>
                                 <a href="../logout.php" class="dropdown-item">Log Out</a>
                         </div>
                     </div>

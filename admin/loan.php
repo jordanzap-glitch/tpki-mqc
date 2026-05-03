@@ -142,6 +142,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
     // Employee ID from session if available
     $employee_id = isset($_SESSION['User_ID']) ? $_SESSION['User_ID'] : (isset($_SESSION['UserID']) ? $_SESSION['UserID'] : null);
 
+    // Lookup User_ID from tbl_user for processed_by
+    $processed_by = null;
+    $_uid = (int)($_SESSION['userId'] ?? 0);
+    if ($_uid > 0) {
+        $_pb_stmt = mysqli_prepare($conn, "SELECT User_ID FROM tbl_user WHERE id = ? LIMIT 1");
+        if ($_pb_stmt) {
+            mysqli_stmt_bind_param($_pb_stmt, 'i', $_uid);
+            mysqli_stmt_execute($_pb_stmt);
+            mysqli_stmt_bind_result($_pb_stmt, $processed_by);
+            mysqli_stmt_fetch($_pb_stmt);
+            mysqli_stmt_close($_pb_stmt);
+        }
+    }
+
     if (empty($client_id)) {
         $error = 'Client is required.';
     } else {
@@ -164,16 +178,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
         }
         $term = $period_mult * intval($no_of_months);
 
-        $sql = "INSERT INTO tbl_loan_info (Loan_ID, Client_ID, Loan_Type, Loan_Cycle, Effective_Date, Maturity_Date, Premium, Benefit, Loan_Amount, No_of_Months, Payment_Mode, No_of_Periods, Term, Interest_Rate_ID, Total_Interest_Rate, Total_Interest, Total_Amount, Fixed_Amount, moa_pic, Loan_Status, Employee_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO tbl_loan_info (Loan_ID, Client_ID, Loan_Type, Loan_Cycle, Effective_Date, Maturity_Date, Premium, Benefit, Loan_Amount, No_of_Months, Payment_Mode, No_of_Periods, Term, Interest_Rate_ID, Total_Interest_Rate, Total_Interest, Total_Amount, Fixed_Amount, moa_pic, Loan_Status, Employee_ID, processed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($conn, $sql);
         if ($stmt) {
             // types: s=string, d=double, i=int, b=blob
-            $types = 'ssssssdddisiisddddbss';
+            $types = 'ssssssdddisiisddddbsss';
             mysqli_stmt_bind_param($stmt, $types,
                 $loan_id, $client_id, $loan_type, $loan_cycle, $effective_date, $maturity_date,
                 $premium, $benefit, $loan_amount, $no_of_months, $payment_mode, $no_of_periods, $term,
                 $interest_rate_id, $total_interest_rate, $total_interest, $total_amount, $fixed_amount,
-                $moa_pic, $loan_status, $employee_id
+                $moa_pic, $loan_status, $employee_id, $processed_by
             );
             // If blob present, send it via send_long_data (param index is zero-based)
             if ($moa_pic !== null) {

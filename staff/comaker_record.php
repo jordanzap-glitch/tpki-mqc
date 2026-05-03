@@ -80,13 +80,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
 // JSON endpoint for client-side fetching
 if (isset($_GET['fetch_comakers'])) {
     $out = ['data' => []];
-    $sql = "SELECT id, Comaker_ID, Last_Name, First_Name, Middle_Name, Age, Gender, Date_Of_Birth, Place_Of_Birth, Civil_Status, Mobile_No, Email_Address, House_Street_Bldng, Barangay_Town, City_Municipality, Province, Zip_Code, No_Of_Children, ID_Presented, ID_Reference_No, Income_Source, Other_Income_Source, Montly_Income, Business_Name, Business_Address, Name_Of_Spouse, Primary_Bank, Name_Of_Lending, Acquaintance_Duration, Relationship FROM tbl_comaker_info ORDER BY id DESC";
-    $res = mysqli_query($conn, $sql);
-    if ($res) {
-        while ($row = mysqli_fetch_assoc($res)) {
-            $out['data'][] = $row;
+    $filterBranch = $_SESSION['branchId'] ?? '';
+    if ($filterBranch !== '') {
+        $fsql = "SELECT cm.id, cm.Comaker_ID, cm.Last_Name, cm.First_Name, cm.Middle_Name,
+                        cm.Age, cm.Gender, cm.Date_Of_Birth, cm.Place_Of_Birth, cm.Civil_Status,
+                        cm.Mobile_No, cm.Email_Address, cm.House_Street_Bldng, cm.Barangay_Town,
+                        cm.City_Municipality, cm.Province, cm.Zip_Code, cm.No_Of_Children,
+                        cm.ID_Presented, cm.ID_Reference_No, cm.Income_Source, cm.Other_Income_Source,
+                        cm.Montly_Income, cm.Business_Name, cm.Business_Address, cm.Name_Of_Spouse,
+                        cm.Primary_Bank, cm.Name_Of_Lending, cm.Acquaintance_Duration, cm.Relationship
+                 FROM tbl_comaker_info cm
+                 INNER JOIN tbl_client_info c ON cm.Client_ID = c.Client_ID
+                 WHERE c.Branch_ID = ?
+                 ORDER BY cm.id DESC";
+        $fstmt = mysqli_prepare($conn, $fsql);
+        if ($fstmt) {
+            mysqli_stmt_bind_param($fstmt, 's', $filterBranch);
+            mysqli_stmt_execute($fstmt);
+            $res = mysqli_stmt_get_result($fstmt);
+            if ($res) {
+                while ($row = mysqli_fetch_assoc($res)) $out['data'][] = $row;
+                mysqli_free_result($res);
+            }
+            mysqli_stmt_close($fstmt);
         }
-        mysqli_free_result($res);
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);
@@ -123,6 +140,45 @@ if (isset($_GET['fetch_comakers'])) {
         height: 16px;
         margin: 0;
         transform: none;
+    }
+    /* Enhanced visibility for inputs and search on comaker records */
+    .dataTables_wrapper .dataTables_filter input,
+    #comakersTable .form-control,
+    .modal-content .form-control {
+        background-color: rgba(255,255,255,0.04);
+        color: #ffffff;
+        border: 1px solid rgba(255,255,255,0.12);
+        padding: .35rem .6rem;
+        border-radius: .25rem;
+        transition: box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    #comakersTable .form-control:focus,
+    .modal-content .form-control:focus {
+        outline: none;
+        border-color: rgba(61,242,118,0.6);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.12);
+        background-color: rgba(255,255,255,0.06);
+        color: #ffffff;
+    }
+
+    /* Light mode overrides */
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input,
+    [data-theme="light"] #comakersTable .form-control,
+    [data-theme="light"] .modal-content .form-control {
+        background-color: #ffffff;
+        color: #212529;
+        border: 1px solid #ced4da;
+    }
+
+    [data-theme="light"] .dataTables_wrapper .dataTables_filter input:focus,
+    [data-theme="light"] #comakersTable .form-control:focus,
+    [data-theme="light"] .modal-content .form-control:focus {
+        border-color: rgba(61,242,118,0.5);
+        box-shadow: 0 0 0 .15rem rgba(61,242,118,0.06);
+        background-color: #ffffff;
+        color: #212529;
     }
     </style>
 </head>

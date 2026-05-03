@@ -31,25 +31,28 @@ if (!empty($_SESSION['userId'])) {
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
+                    <a href="index.php" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-handshake me-2"></i>Clients</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="client.php" class="dropdown-item">Client Information</a>
+                            <a href="client.php" class="dropdown-item">Add Client Info</a>
                             <a href="client_record.php" class="dropdown-item">Client Record</a>
+
                         </div>
                     </div>
                      <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-user-plus me-2"></i>Comaker</a>
                         <div class="dropdown-menu bg-transparent border-0">
-                            <a href="comaker_info.php" class="dropdown-item">Comaker</a>
                             <a href="comaker_record.php" class="dropdown-item"> Comaker Record</a>
                         </div>
                     </div>
+                     <a href="interest_rate.php" class="nav-item nav-link"><i class="fa fa-percentage me-2"></i>Interest Rate</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-hand-holding-usd me-2"></i>Loans</a>
                         <div class="dropdown-menu bg-transparent border-0">
                             <a href="loan.php" class="dropdown-item">Loan Information</a>
                             <a href="loan_record.php" class="dropdown-item">Loan Record</a>
+                            <a href="loan_ledger.php" class="dropdown-item">Loan Ledger</a>
                         </div>
                     </div>
                 </div>
