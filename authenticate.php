@@ -1,6 +1,8 @@
 <?php
 require __DIR__ . '/db/dbcon.php';
 session_start();
+header("X-Frame-Options: SAMEORIGIN");
+header("Content-Security-Policy: frame-ancestors 'self'");
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');

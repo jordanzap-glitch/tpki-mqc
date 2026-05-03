@@ -27,9 +27,9 @@ $navBranchName = htmlspecialchars($_SESSION['branchName'] ?? '');
                 </a>
                 <div class="navbar-nav align-items-center ms-auto">
                     <?php if ($navBranchName): ?>
-                    <div class="nav-item me-3 d-none d-lg-flex align-items-center">
-                        <span class="badge rounded-pill px-3 py-2" style="background:rgba(61,242,118,0.15);border:1px solid rgba(61,242,118,0.35);color:var(--primary);font-size:.75rem;letter-spacing:.04em;">
-                            <i class="fa fa-map-marker-alt me-1" style="opacity:.7"></i><?php echo $navBranchName; ?>
+                    <div class="nav-item me-2 d-none d-lg-flex">
+                        <span class="badge bg-success px-2 py-1" style="font-size:.8rem">
+                            <i class="fa fa-map-marker-alt me-1"></i><?php echo $navBranchName; ?>
                         </span>
                     </div>
                     <?php endif; ?>
