@@ -19,7 +19,7 @@ if (!empty($_SESSION['userId'])) {
 
 <div class="sidebar pe-4 pb-3">
             <nav class="navbar navbar-dark" style="background:transparent!important">
-                <a href="index.html" class="navbar-brand mx-4 mb-3">
+                <a href="index.php" class="navbar-brand mx-4 mb-3">
                     <img src="../img/logo.png" alt="TPKI" style="height:40px; width:auto;">
                 </a>
                 <div class="d-flex align-items-center ms-4 mb-4">

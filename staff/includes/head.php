@@ -1,5 +1,5 @@
 <!-- Favicon -->
-    <link href="img/favicon.ico" rel="icon">
+    <link href="../img/logo.png" rel="icon" type="image/png">
 
     <!-- Theme early init (prevents flash of wrong theme) -->
     <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
