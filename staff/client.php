@@ -8,9 +8,19 @@ if (!empty($_GET['action']) && $_GET['action'] === 'search_client') {
     $q = isset($_GET['q']) ? trim($_GET['q']) : '';
     if (mb_strlen($q) < 2) { echo json_encode([]); exit; }
     $like = '%' . $q . '%';
-    $stmt_s = mysqli_prepare($conn, "SELECT Client_ID, CONCAT(Last_Name, ', ', First_Name, IF(Middle_Name IS NOT NULL AND Middle_Name != '', CONCAT(' ', Middle_Name), '')) AS Full_Name FROM tbl_client_info WHERE Client_ID LIKE ? OR Last_Name LIKE ? OR First_Name LIKE ? ORDER BY Last_Name LIMIT 15");
+    $branchFilter = $_SESSION['branchId'] ?? '';
+    if ($branchFilter !== '') {
+        $stmt_s = mysqli_prepare($conn, "SELECT Client_ID, CONCAT(Last_Name, ', ', First_Name, IF(Middle_Name IS NOT NULL AND Middle_Name != '', CONCAT(' ', Middle_Name), '')) AS Full_Name FROM tbl_client_info WHERE Branch_ID = ? AND (Client_ID LIKE ? OR Last_Name LIKE ? OR First_Name LIKE ?) ORDER BY Last_Name LIMIT 15");
+        if ($stmt_s) {
+            mysqli_stmt_bind_param($stmt_s, 'ssss', $branchFilter, $like, $like, $like);
+        }
+    } else {
+        $stmt_s = mysqli_prepare($conn, "SELECT Client_ID, CONCAT(Last_Name, ', ', First_Name, IF(Middle_Name IS NOT NULL AND Middle_Name != '', CONCAT(' ', Middle_Name), '')) AS Full_Name FROM tbl_client_info WHERE Client_ID LIKE ? OR Last_Name LIKE ? OR First_Name LIKE ? ORDER BY Last_Name LIMIT 15");
+        if ($stmt_s) {
+            mysqli_stmt_bind_param($stmt_s, 'sss', $like, $like, $like);
+        }
+    }
     if ($stmt_s) {
-        mysqli_stmt_bind_param($stmt_s, 'sss', $like, $like, $like);
         mysqli_stmt_execute($stmt_s);
         $cid_s = $fname_s = null;
         mysqli_stmt_bind_result($stmt_s, $cid_s, $fname_s);
@@ -534,6 +544,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                     <a href="client.php" class="btn-cf-outline btn"><i class="fa fa-redo me-1"></i> Reset Form</a>
                 </div>
 
+                <!-- ── Loan Type Instructions ── -->
+                <style>
+                .reg-guidelines {
+                    background: rgba(61,242,118,0.1);
+                    border: 1.5px solid rgba(61,242,118,0.4);
+                    border-radius: 12px;
+                    padding: 1.1rem 1.4rem;
+                    margin-bottom: 1.5rem;
+                }
+                .reg-guidelines-title {
+                    font-size: .78rem; font-weight: 700; letter-spacing: .08em;
+                    text-transform: uppercase; color: var(--primary); margin-bottom: .75rem;
+                }
+                .reg-guideline-box {
+                    background: rgba(255,255,255,0.08);
+                    border: 1px solid rgba(255,255,255,0.18);
+                    border-radius: 10px; padding: .85rem 1rem; height: 100%;
+                }
+                .reg-guideline-box-title {
+                    font-size: .85rem; font-weight: 700; color: #fff; margin-bottom: .5rem;
+                }
+                .reg-guideline-box ul {
+                    margin: 0; padding-left: 1.15rem;
+                    font-size: .82rem; color: #e2e5f1; line-height: 1.8;
+                }
+                .reg-guideline-box ul li { margin-bottom: .1rem; }
+                /* Light mode */
+                [data-theme="light"] .reg-guidelines {
+                    background: rgba(26,122,58,0.07);
+                    border-color: rgba(26,122,58,0.35);
+                }
+                [data-theme="light"] .reg-guidelines-title { color: #1a7a3a; }
+                [data-theme="light"] .reg-guideline-box {
+                    background: #f8fafc;
+                    border-color: #d1d9e0;
+                }
+                [data-theme="light"] .reg-guideline-box-title { color: #1e293b; }
+                [data-theme="light"] .reg-guideline-box ul { color: #475569; }
+                </style>
+                <div class="reg-guidelines">
+                    <div class="reg-guidelines-title">
+                        <i class="fa fa-info-circle me-2"></i>Registration Guidelines by Loan Type
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="reg-guideline-box">
+                                <div class="reg-guideline-box-title">
+                                    <i class="fa fa-user me-2" style="color:var(--primary)"></i>Personal &amp; Salary Loans
+                                </div>
+                                <ul>
+                                    <li>Register the borrower on the <strong>Client Registration</strong> tab.</li>
+                                    <li>A co-maker is <strong style="color:var(--primary);">required</strong> for these loan types.</li>
+                                    <li>After completing the client's details, go to the <strong>Co-maker(s)</strong> tab to register one or more co-makers and link them to this client.</li>
+                                    <li>To add a co-maker to a client registered in a previous session, use the <strong>Add to Existing Client</strong> tab.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="reg-guideline-box">
+                                <div class="reg-guideline-box-title">
+                                    <i class="fa fa-users me-2" style="color:var(--primary)"></i>Group Loans
+                                </div>
+                                <ul>
+                                    <li><strong style="color:var(--primary);">Do not</strong> register group loan members as co-makers.</li>
+                                    <li>Within a group, each member acts as a co-maker for the others.</li>
+                                    <li>Register <strong>every group member individually</strong> on the <strong>Client Registration</strong> tab — one registration per member.</li>
+                                    <li>Members will be linked together when a Group Loan is created in the Loan module.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tab Navigation -->
                 <ul class="nav cf-tabs" id="mainTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -866,6 +949,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 <!-- ─── Tab 2: Co-maker Registration ───────────────────────── -->
                 <div class="tab-pane fade" id="tab-comaker" role="tabpanel">
 
+                    <!-- Co-maker usage note -->
+                    <div style="background:rgba(255,193,7,0.13);border:1.5px solid rgba(255,193,7,0.55);border-radius:10px;padding:.9rem 1.15rem;margin-bottom:1.25rem;font-size:.84rem;color:#e2e5f1;line-height:1.7;">
+                        <div style="font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffc107;margin-bottom:.4rem;"><i class="fa fa-exclamation-triangle me-2"></i>For Personal &amp; Salary Loans Only</div>
+                        Co-makers registered here will be linked to the client being registered in the <em>Client Registration</em> tab.
+                        Each co-maker must have a valid first and last name.<br>
+                        <strong style="color:#ffc107;">&#9888; Group loan members should not be registered as co-makers</strong> — register each group member individually as a client instead.
+                    </div>
+
                     <!-- Count selector -->
                     <div class="cf-card">
                         <div class="cf-section-title">
@@ -874,17 +965,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                         <div class="d-flex align-items-center gap-3 flex-wrap">
                             <div>
                                 <label class="form-label mb-1">Number of Co-makers to Add</label>
-                                <input id="comakerCountSelect" list="comakerCountList" class="form-control" value="None (skip)" style="width:auto;min-width:160px;" autocomplete="off" placeholder="Select count...">
+                                <input id="comakerCountSelect" list="comakerCountList" class="form-control" value="" style="width:auto;min-width:180px;" autocomplete="off" placeholder="Set or select count...">
                                 <datalist id="comakerCountList">
-                                    <option value="None (skip)">
-                                    <option value="1 Co-maker">
-                                    <option value="2 Co-makers">
-                                    <option value="3 Co-makers">
-                                    <option value="4 Co-makers">
-                                    <option value="5 Co-makers">
+                                    <option value="1">
+                                    <option value="2">
+                                    <option value="3">
+                                    <option value="4">
+                                    <option value="5">
+                                    <option value="6">
                                 </datalist>
+                                <small style="display:block;margin-top:.3rem;color:rgba(255,255,255,0.45);font-size:.76rem;">
+                                    <i class="fa fa-keyboard me-1"></i>You can type a number e.g. 1, 2, 3, 4, 5, 6
+                                </small>
                             </div>
-                            <small style="color:rgba(255,255,255,0.4);font-size:.78rem;align-self:flex-end;margin-bottom:.3rem;">
+                            <small style="color:rgba(255,255,255,0.4);font-size:.78rem;align-self:flex-end;margin-bottom:1.5rem;">
                                 <i class="fa fa-info-circle me-1"></i>Co-makers will be linked to the newly registered client.
                             </small>
                         </div>
@@ -897,6 +991,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
                 <!-- ─── Tab 3: Add Co-maker to Existing Client ──────────────── -->
                 <div class="tab-pane fade" id="tab-existing" role="tabpanel">
+
+                    <!-- Tab 3 usage note -->
+                    <div style="background:rgba(255,193,7,0.13);border:1.5px solid rgba(255,193,7,0.55);border-radius:10px;padding:.9rem 1.15rem;margin-bottom:1.25rem;font-size:.84rem;color:#e2e5f1;line-height:1.7;">
+                        <div style="font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffc107;margin-bottom:.4rem;"><i class="fa fa-exclamation-triangle me-2"></i>For Personal &amp; Salary Loans Only</div>
+                        Use this tab to attach a co-maker to a client who was registered in a previous session.
+                        Search for the existing client, then fill in the co-maker details below.<br>
+                        <strong style="color:#ffc107;">&#9888; Do not use this tab for Group Loan members</strong> — group members serve as each other's co-makers and must each be registered individually as clients.
+                    </div>
 
                     <!-- Client Search -->
                     <div class="cf-card">
@@ -1544,7 +1646,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
             .then(function(data){
                 resultsList.innerHTML = '';
                 if (!data.length) {
-                    resultsList.innerHTML = '<div style="padding:.5rem;color:rgba(255,255,255,.35);font-size:.8rem;">No clients found.</div>';
+                    resultsList.innerHTML = '<div style="padding:.65rem 1rem;color:#f87171;font-size:.84rem;font-weight:600;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:8px;"><i class="fa fa-exclamation-circle me-2"></i>No matching clients found.</div>';
                     return;
                 }
                 data.forEach(function(row){
