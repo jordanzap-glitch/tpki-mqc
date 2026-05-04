@@ -752,22 +752,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
 
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label">Payment Mode</label>
-                                <input name="Payment_Mode" class="form-control" placeholder="e.g. Weekly / Monthly">
+                                <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                                <input name="Payment_Mode" class="form-control" placeholder="e.g. Weekly / Monthly" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">No. of Periods</label>
-                                <input id="No_of_Periods_display" list="periodsList" class="form-control" placeholder="Select period...">
+                                <label class="form-label">No. of Periods <span class="text-danger">*</span></label>
+                                <input id="No_of_Periods_display" list="periodsList" class="form-control" placeholder="Select period..." required>
                                 <input type="hidden" name="No_of_Periods" id="No_of_Periods" value="">
                                 <datalist id="periodsList"></datalist>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Effective Date</label>
-                                <input id="Effective_Date" type="date" name="Effective_Date" class="form-control">
+                                <label class="form-label">Effective Date <span class="text-danger">*</span></label>
+                                <input id="Effective_Date" type="date" name="Effective_Date" class="form-control" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Maturity Date</label>
-                                <input id="Maturity_Date" type="date" name="Maturity_Date" class="form-control">
+                                <label class="form-label">Maturity Date <span class="text-danger">*</span></label>
+                                <input id="Maturity_Date" type="date" name="Maturity_Date" class="form-control" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">No. of Months</label>
@@ -775,11 +775,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_loan'])) {
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Loan Amount <span class="text-danger">*</span></label>
-                                <input id="Loan_Amount" type="number" step="0.01" name="Loan_Amount" class="form-control" placeholder="0.00">
+                                <input id="Loan_Amount" type="number" step="0.01" name="Loan_Amount" class="form-control" placeholder="0.00" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Premium</label>
-                                <input type="number" step="0.01" name="Premium" class="form-control" placeholder="0.00">
+                                <label class="form-label">Premium <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" name="Premium" class="form-control" placeholder="0.00" required>
                             </div>
                             <input type="hidden" name="Benefit" value="">
                             <div class="col-md-6" id="salaryProofContainer" style="display:none">

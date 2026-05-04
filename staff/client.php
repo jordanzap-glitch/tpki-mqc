@@ -705,8 +705,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                         <input id="ageClient" name="Age" type="number" min="0" class="form-control" placeholder="25" readonly>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">Gender</label>
-                                        <input list="genderList" name="Gender" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                        <label class="form-label">Gender <span class="text-danger">*</span></label>
+                                        <input list="genderList" name="Gender" class="form-control" placeholder="Select or type..." autocomplete="off" required>
                                         <datalist id="genderList">
                                             <option value="Male">
                                             <option value="Female">
@@ -714,8 +714,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                         </datalist>
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label">Date of Birth</label>
-                                        <input id="dobClient" name="Date_Of_Birth" type="date" class="form-control">
+                                        <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                        <input id="dobClient" name="Date_Of_Birth" type="date" class="form-control" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Place of Birth <span class="text-danger">*</span></label>
@@ -754,8 +754,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 <input name="Religion" class="form-control" placeholder="e.g. Roman Catholic" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">No. of Children</label>
-                                <input list="childrenList" name="No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off">
+                                <label class="form-label">No. of Children <span class="text-danger">*</span></label>
+                                <input list="childrenList" name="No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off" required>
                                 <datalist id="childrenList">
                                     <option value="1">
                                     <option value="2">
@@ -863,8 +863,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                                 <datalist id="brgyClientList"></datalist>
                             </div>
                             <div class="col-md-1">
-                                <label class="form-label">Zip Code</label>
-                                <input name="Zip_Code" class="form-control" placeholder="0000">
+                                <label class="form-label">Zip Code <span class="text-danger">*</span></label>
+                                <input name="Zip_Code" class="form-control" placeholder="0000" required>
                             </div>
                         </div>
                     </div>
