@@ -274,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 <body>
     <div class="container-fluid position-relative d-flex p-0">
         <!-- Spinner Start -->
-       
+       <?php include "includes/spinner.php"; ?>
         <!-- Spinner End -->
 
 
