@@ -953,9 +953,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_penalty'])) {
                 if (res && res.data) {
                     $('#groupList').empty();
                     res.data.forEach(function(g){
+                        var cnt = parseInt(g.member_count) || 0;
+                        var incomplete = cnt < 15;
                         var label = g.Group_ID
                             + (g.Info ? ' — ' + g.Info : '')
                             + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')'
+                            + (incomplete ? ' ⚠ INCOMPLETE' : '')
                             + ' (' + g.Group_ID + ')';
                         $('#groupList').append($('<option>').val(label));
                         groupsMap[g.Group_ID] = g;
@@ -997,6 +1000,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_penalty'])) {
             $('#groupHidden').val(gid);
             if (gid && groupsMap[gid]) {
                 var g = groupsMap[gid];
+                var cnt = parseInt(g.member_count) || 0;
+                // Block groups with fewer than 15 members
+                if (cnt < 15) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Incomplete Group',
+                        html: '<b>' + g.Group_ID + '</b> only has <b>' + cnt + '</b> member(s).<br>A minimum of <b>15 members</b> is required.',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#1a7a3a'
+                    });
+                    $('#groupInput').val('');
+                    $('#groupHidden').val('');
+                    $('#groupInfoPanel').hide();
+                    selectedLoanID = '';
+                    $('#loanSummary').hide();
+                    $('#ledgerSection').hide();
+                    $('#btnGenerate').prop('disabled', true);
+                    return;
+                }
                 var selText = g.Group_ID + (g.Info ? ' — ' + g.Info : '') + ' (' + g.member_count + ' member' + (g.member_count != 1 ? 's' : '') + ')';
                 $('#groupInfoText').text(selText);
                 $('#groupInfoPanel').show();
