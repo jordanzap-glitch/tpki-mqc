@@ -2,6 +2,28 @@
 include 'includes/init.php';
 include '../db/dbcon.php';
 
+// ── Handle client search AJAX ─────────────────────────────────────────────────
+if (!empty($_GET['action']) && $_GET['action'] === 'search_client') {
+    header('Content-Type: application/json');
+    $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+    if (mb_strlen($q) < 2) { echo json_encode([]); exit; }
+    $like = '%' . $q . '%';
+    $stmt_s = mysqli_prepare($conn, "SELECT Client_ID, CONCAT(Last_Name, ', ', First_Name, IF(Middle_Name IS NOT NULL AND Middle_Name != '', CONCAT(' ', Middle_Name), '')) AS Full_Name FROM tbl_client_info WHERE Client_ID LIKE ? OR Last_Name LIKE ? OR First_Name LIKE ? ORDER BY Last_Name LIMIT 15");
+    if ($stmt_s) {
+        mysqli_stmt_bind_param($stmt_s, 'sss', $like, $like, $like);
+        mysqli_stmt_execute($stmt_s);
+        $cid_s = $fname_s = null;
+        mysqli_stmt_bind_result($stmt_s, $cid_s, $fname_s);
+        $rows_s = [];
+        while (mysqli_stmt_fetch($stmt_s)) {
+            $rows_s[] = ['Client_ID' => $cid_s, 'Full_Name' => $fname_s];
+        }
+        mysqli_stmt_close($stmt_s);
+        echo json_encode($rows_s);
+    } else { echo json_encode([]); }
+    exit;
+}
+
 // Load region + province + city/mun lists once for both address dropdowns
 $regData     = json_decode(file_get_contents(__DIR__ . '/includes/refregion.json'),  true);
 $provData    = json_decode(file_get_contents(__DIR__ . '/includes/refprovince.json'), true);
@@ -473,6 +495,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 [data-theme="light"] .cf-tabs .nav-link { color: #94a3b8; }
                 [data-theme="light"] .cf-tabs .nav-link:hover { color: #1e293b; }
                 [data-theme="light"] .cf-tabs .nav-link.active { color: #1a7a3a; border-bottom-color: #1a7a3a; }
+
+                /* ── Client search result items ── */
+                .cm-search-result-item {
+                    padding: .55rem .9rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    color: #e2e5f1;
+                    font-size: .85rem;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    transition: background .15s;
+                }
+                .cm-search-result-item:hover { background: rgba(61,242,118,0.1); }
+                .cm-search-result-item:last-child { border-bottom: none; }
+                [data-theme="light"] .cm-search-result-item { color: #1e293b; border-bottom-color: #f1f5f9; }
+                [data-theme="light"] .cm-search-result-item:hover { background: rgba(26,122,58,0.07); }
+
+                /* ── Selected client card ── */
+                #selectedClientCard {
+                    background: var(--primary);
+                    border: none;
+                    color: #000;
+                }
+                #selectedClientCard .cf-section-title { color: #000 !important; border-bottom-color: rgba(0,0,0,0.15) !important; }
+                #selectedClientCard #selectedClientName { color: #000; }
+                #selectedClientCard #selectedClientIdDisplay { color: rgba(0,0,0,0.65); }
+                [data-theme="light"] #selectedClientCard { background: var(--primary); }
             </style>
 
             <div class="container-fluid pt-4 px-4 pb-5">
@@ -493,53 +541,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                             <i class="fa fa-user-plus"></i> Client Registration
                         </a>
                     </li>
-                    <li class="nav-item" id="comakerTabItem" role="presentation" style="display:none">
+                    <li class="nav-item" role="presentation">
                         <a class="nav-link" id="tab-comaker-lnk" data-bs-toggle="tab" href="#tab-comaker" role="tab">
-                            <i class="fa fa-user-friends"></i> Co-maker Registration
+                            <i class="fa fa-user-friends"></i> Co-maker(s)
                         </a>
                     </li>
-                    <li class="nav-item d-flex align-items-center" style="padding:0 .35rem;">
-                        <button type="button" id="btnToggleComaker" class="cf-tab-add-btn" title="Open Co-maker tab">
-                            <i class="fa fa-plus" id="iconToggleComaker"></i>
-                        </button>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="tab-existing-lnk" data-bs-toggle="tab" href="#tab-existing" role="tab">
+                            <i class="fa fa-search-plus"></i> Add to Existing Client
+                        </a>
                     </li>
                 </ul>
-                <style>
-                .cf-tab-add-btn {
-                    background: none;
-                    border: 1.5px solid rgba(255,255,255,0.18);
-                    border-radius: 50%;
-                    width: 24px; height: 24px;
-                    display: inline-flex; align-items: center; justify-content: center;
-                    color: rgba(255,255,255,0.45);
-                    font-size: .7rem;
-                    margin-left: .5rem;
-                    cursor: pointer;
-                    transition: border-color .2s, color .2s, background .2s, transform .15s;
-                    flex-shrink: 0;
-                    padding: 0;
-                    line-height: 1;
-                }
-                .cf-tab-add-btn:hover {
-                    border-color: var(--primary);
-                    color: var(--primary);
-                    background: rgba(61,242,118,0.08);
-                    transform: scale(1.1);
-                }
-                .cf-tab-add-btn.is-open {
-                    border-color: rgba(255,100,100,0.55);
-                    color: rgba(255,100,100,0.8);
-                }
-                .cf-tab-add-btn.is-open:hover {
-                    background: rgba(255,100,100,0.08);
-                    border-color: rgba(255,100,100,0.8);
-                    color: rgba(255,100,100,1);
-                }
-                [data-theme="light"] .cf-tab-add-btn { border-color: #d1d9e0; color: #94a3b8; }
-                [data-theme="light"] .cf-tab-add-btn:hover { border-color: #1a7a3a; color: #1a7a3a; background: rgba(26,122,58,0.06); }
-                [data-theme="light"] .cf-tab-add-btn.is-open { border-color: rgba(220,53,69,.5); color: rgba(220,53,69,.8); }
-                [data-theme="light"] .cf-tab-add-btn.is-open:hover { background: rgba(220,53,69,.07); border-color: #dc3545; color: #dc3545; }
-                </style>
 
                 <div class="tab-content">
 
@@ -854,223 +866,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 <!-- ─── Tab 2: Co-maker Registration ───────────────────────── -->
                 <div class="tab-pane fade" id="tab-comaker" role="tabpanel">
 
-                    <?php if (!empty($cm_success)): ?>
-                        <div class="alert alert-success" hidden><?php echo htmlspecialchars($cm_success); ?></div>
-                    <?php endif; ?>
-                    <?php if (!empty($cm_error)): ?>
-                        <div class="alert alert-danger" hidden><?php echo htmlspecialchars($cm_error); ?></div>
-                    <?php endif; ?>
-
-                    <form method="post" id="comakerForm">
-                        <input type="hidden" name="save_comaker" value="1">
-                        <input type="hidden" name="cm_Client_ID" id="cm_Client_ID" value="">
-
-                        <!-- Section 1: Personal Information -->
-                        <div class="cf-card">
-                            <div class="cf-section-title">
-                                <span class="cf-step-badge">1</span>
-                                <i class="fa fa-id-card"></i> Personal Information
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                                    <input name="cm_Last_Name" class="form-control" placeholder="Last Name" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">First Name <span class="text-danger">*</span></label>
-                                    <input name="cm_First_Name" class="form-control" placeholder="First Name" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Middle Name</label>
-                                    <input name="cm_Middle_Name" class="form-control" placeholder="Middle Name">
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Age</label>
-                                    <input id="ageComaker" name="cm_Age" type="number" min="0" class="form-control" placeholder="Age" readonly>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Gender</label>
-                                    <input list="genderList" name="cm_Gender" class="form-control" placeholder="Select or type..." autocomplete="off">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Date of Birth</label>
-                                    <input id="dobComaker" name="cm_Date_Of_Birth" type="date" class="form-control">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Place of Birth</label>
-                                    <div class="d-flex gap-2">
-                                        <input id="pobProvComaker" list="pobProvComakerList" class="form-control" placeholder="Province..." autocomplete="off">
-                                        <datalist id="pobProvComakerList"></datalist>
-                                        <input id="pobCityComaker" list="pobCityComakerList" class="form-control" placeholder="City / Municipality..." autocomplete="off">
-                                        <datalist id="pobCityComakerList"></datalist>
-                                    </div>
-                                </div>
-                                <input type="hidden" name="cm_Place_Of_Birth" id="pobHiddenComaker">
-                                <div class="col-md-3">
-                                    <label class="form-label">Civil Status</label>
-                                    <input list="civilComakerList" name="cm_Civil_Status" class="form-control" placeholder="Select or type..." autocomplete="off">
-                                    <datalist id="civilComakerList">
-                                        <option value="Single">
-                                        <option value="Married">
-                                        <option value="Widowed">
-                                        <option value="Separated">
-                                    </datalist>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">No. of Children</label>
-                                    <input list="childrenComakerList" name="cm_No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off">
-                                    <datalist id="childrenComakerList">
-                                        <option value="1">
-                                        <option value="2">
-                                        <option value="3">
-                                        <option value="4">
-                                        <option value="5">
-                                        <option value="6">
-                                        <option value="7">
-                                        <option value="8">
-                                        <option value="9">
-                                        <option value="10">
-                                        <option value="11">
-                                        <option value="12">
-                                        <option value="13">
-                                        <option value="14">
-                                        <option value="15">
-                                        <option value="More than 15">
-                                    </datalist>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Mobile No.</label>
-                                    <input id="mobileComaker" name="cm_Mobile_No" type="tel" inputmode="numeric" pattern="09[0-9]{2}-[0-9]{3}-[0-9]{4}" class="form-control" placeholder="09xx-xxx-xxxx" maxlength="13">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Email Address</label>
-                                    <input name="cm_Email_Address" type="email" class="form-control" placeholder="email@example.com">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">ID Presented</label>
-                                    <input list="idPresentedList" name="cm_ID_Presented" class="form-control" placeholder="Select or type..." autocomplete="off">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">ID Reference No.</label>
-                                    <input name="cm_ID_Reference_No" class="form-control" placeholder="Reference number">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Name of Spouse</label>
-                                    <input name="cm_Name_Of_Spouse" class="form-control" placeholder="Spouse's Full Name">
-                                </div>
-                            </div>
+                    <!-- Count selector -->
+                    <div class="cf-card">
+                        <div class="cf-section-title">
+                            <i class="fa fa-users"></i> Co-maker Setup
                         </div>
-
-                        <!-- Section 2: Address -->
-                        <div class="cf-card">
-                            <div class="cf-section-title">
-                                <span class="cf-step-badge">2</span>
-                                <i class="fa fa-map-marker-alt"></i> Address
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div>
+                                <label class="form-label mb-1">Number of Co-makers to Add</label>
+                                <input id="comakerCountSelect" list="comakerCountList" class="form-control" value="None (skip)" style="width:auto;min-width:160px;" autocomplete="off" placeholder="Select count...">
+                                <datalist id="comakerCountList">
+                                    <option value="None (skip)">
+                                    <option value="1 Co-maker">
+                                    <option value="2 Co-makers">
+                                    <option value="3 Co-makers">
+                                    <option value="4 Co-makers">
+                                    <option value="5 Co-makers">
+                                </datalist>
                             </div>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Region</label>
-                                    <input id="regionComaker" list="regionComakerList" name="cm_Region" class="form-control" placeholder="Select or type region..." autocomplete="off">
-                                    <datalist id="regionComakerList">
-                                        <?php
-                                        if ($regData && isset($regData['RECORDS'])) {
-                                            foreach ($regData['RECORDS'] as $reg) {
-                                                $rDesc = htmlspecialchars($reg['regDesc']);
-                                                echo "<option value=\"$rDesc\">";
-                                            }
-                                        }
-                                        ?>
-                                    </datalist>
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="form-label">House / Street / Building</label>
-                                    <input name="cm_House_Street_Bldng" class="form-control" placeholder="Blk 1 Lot 2, Sampaguita St.">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Province</label>
-                                    <input id="provinceComaker" list="provComakerList" name="cm_Province" class="form-control" placeholder="Select or type province..." autocomplete="off">
-                                    <datalist id="provComakerList"></datalist>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">City / Municipality</label>
-                                    <input id="cityComaker" list="cityComakerList" name="cm_City_Municipality" class="form-control" placeholder="Select or type city..." autocomplete="off">
-                                    <datalist id="cityComakerList"></datalist>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Barangay / Town</label>
-                                    <input id="brgyComaker" list="brgyComakerList" name="cm_Barangay_Town" class="form-control" placeholder="Select or type barangay..." autocomplete="off">
-                                    <datalist id="brgyComakerList"></datalist>
-                                </div>
-                                <div class="col-md-1">
-                                    <label class="form-label">Zip Code</label>
-                                    <input name="cm_Zip_Code" class="form-control" placeholder="0000">
-                                </div>
-                            </div>
+                            <small style="color:rgba(255,255,255,0.4);font-size:.78rem;align-self:flex-end;margin-bottom:.3rem;">
+                                <i class="fa fa-info-circle me-1"></i>Co-makers will be linked to the newly registered client.
+                            </small>
                         </div>
+                    </div>
 
-                        <!-- Section 3: Financial Information -->
-                        <div class="cf-card">
-                            <div class="cf-section-title">
-                                <span class="cf-step-badge">3</span>
-                                <i class="fa fa-coins"></i> Financial Information
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Income Source</label>
-                                    <input name="cm_Income_Source" class="form-control" placeholder="e.g. Employment">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Other Income Source</label>
-                                    <input name="cm_Other_Income_Source" class="form-control" placeholder="Other sources">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Monthly Income</label>
-                                    <input name="cm_Montly_Income" type="number" step="0.01" class="form-control" placeholder="0.00">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Business Name</label>
-                                    <input name="cm_Business_Name" class="form-control" placeholder="Business Name">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Business Address</label>
-                                    <input name="cm_Business_Address" class="form-control" placeholder="Business Address">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Primary Bank</label>
-                                    <input name="cm_Primary_Bank" class="form-control" placeholder="e.g. BDO, BPI">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Name of Lending Institution</label>
-                                    <input name="cm_Name_Of_Lending" class="form-control" placeholder="Lending institution name">
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Dynamic co-maker panels rendered here -->
+                    <div id="comakerPanelsContainer"></div>
 
-                        <!-- Section 4: Relationship to Client -->
-                        <div class="cf-card">
-                            <div class="cf-section-title">
-                                <span class="cf-step-badge">4</span>
-                                <i class="fa fa-handshake"></i> Relationship to Client
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Relationship</label>
-                                    <input name="cm_Relationship" class="form-control" placeholder="e.g. Friend, Sibling, Colleague">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Acquaintance Duration (years)</label>
-                                    <input name="cm_Acquaintance_Duration" type="number" step="0.1" min="0" class="form-control" placeholder="0.0">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Action Bar -->
-                        <div class="cf-action-bar">
-                            <button type="reset" class="btn-cf-outline btn"><i class="fa fa-times me-1"></i> Clear</button>
-                        </div>
-
-                    </form>
                 </div><!-- end tab-comaker -->
+
+                <!-- ─── Tab 3: Add Co-maker to Existing Client ──────────────── -->
+                <div class="tab-pane fade" id="tab-existing" role="tabpanel">
+
+                    <!-- Client Search -->
+                    <div class="cf-card">
+                        <div class="cf-section-title">
+                            <i class="fa fa-user-check"></i> Find Existing Client
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Search by Client ID or Name</label>
+                                <div class="input-group">
+                                    <input id="existingClientSearch" class="form-control" placeholder="Type Client ID or full name..." autocomplete="off">
+                                    <button type="button" class="btn btn-cf-primary" id="btnSearchExistingClient" style="border-radius:0 8px 8px 0;padding:.48rem 1rem;">
+                                        <i class="fa fa-search"></i>
+                                    </button>
+                                </div>
+                                <div id="existingClientResultsList" class="mt-2" style="max-height:240px;overflow-y:auto;border-radius:8px;"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="selectedClientCard" style="display:none;" class="p-3 rounded h-100">
+                                    <div class="cf-section-title" style="border:none;padding:0;margin-bottom:.5rem;color:#000;">
+                                        <i class="fa fa-check-circle"></i> Selected Client
+                                    </div>
+                                    <div class="fw-bold fs-6" id="selectedClientName"></div>
+                                    <div class="mt-1" id="selectedClientIdDisplay" style="font-size:.82rem;opacity:.75;"></div>
+                                    <input type="hidden" id="existingClientIdHidden" value="">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Co-maker count + panels (shown after client selected) -->
+                    <div id="existingCmSetup" style="display:none;">
+                        <div class="cf-card">
+                            <div class="cf-section-title">
+                                <i class="fa fa-users"></i> Co-maker Setup
+                            </div>
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <div>
+                                    <label class="form-label mb-1">Number of Co-makers to Add</label>
+                                    <input id="existingComakerCount" list="existingComakerCountList" class="form-control" value="1 Co-maker" style="width:auto;min-width:160px;" autocomplete="off" placeholder="Select count...">
+                                    <datalist id="existingComakerCountList">
+                                        <option value="1 Co-maker">
+                                        <option value="2 Co-makers">
+                                        <option value="3 Co-makers">
+                                        <option value="4 Co-makers">
+                                        <option value="5 Co-makers">
+                                    </datalist>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="existingComakerPanels"></div>
+                    </div>
+
+                </div><!-- end tab-existing -->
 
                 </div><!-- end tab-content -->
 
@@ -1079,9 +959,190 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                     <button type="button" id="btnSaveAll" class="btn-cf-primary btn px-5">
                         <i class="fa fa-save me-1"></i> Save Registration
                     </button>
+                    <button type="button" id="btnSaveExistingComakers" class="btn-cf-primary btn px-5" style="display:none;">
+                        <i class="fa fa-save me-1"></i> Save Co-maker(s)
+                    </button>
                 </div>
 
             </div><!-- end container-fluid -->
+
+            <!-- ── Shared datalists for co-maker panels ────────────────────────── -->
+            <datalist id="cmSharedRegionList">
+                <?php
+                if ($regData && isset($regData['RECORDS'])) {
+                    foreach ($regData['RECORDS'] as $reg) {
+                        echo '<option value="' . htmlspecialchars($reg['regDesc']) . '">';
+                    }
+                }
+                ?>
+            </datalist>
+            <datalist id="cmSharedCivilList">
+                <option value="Single"><option value="Married"><option value="Widowed"><option value="Separated"><option value="Single Parent">
+            </datalist>
+            <datalist id="cmSharedChildrenList">
+                <option value="0"><option value="1"><option value="2"><option value="3"><option value="4"><option value="5">
+                <option value="6"><option value="7"><option value="8"><option value="9"><option value="10"><option value="More than 10">
+            </datalist>
+
+            <!-- ── Co-maker Panel Template ──────────────────────────────────────── -->
+            <template id="comakerPanelTpl">
+<div class="comaker-panel cf-card" data-panel-index="__IDX__" style="border-left:3px solid var(--primary);margin-bottom:1.5rem;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="cf-step-badge">__IDX__</span>
+            <span style="font-size:.9rem;font-weight:700;color:#fff;">Co-maker __IDX__</span>
+        </div>
+        <button type="button" class="btn-cf-outline btn btn-sm py-1 px-2 comaker-clear-btn" title="Clear this co-maker">
+            <i class="fa fa-eraser me-1"></i> Clear
+        </button>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="cf-section-title"><i class="fa fa-id-card"></i> Personal Information</div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input data-cm-field="cm_Last_Name" class="form-control cm-required" placeholder="Last Name">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
+            <input data-cm-field="cm_First_Name" class="form-control cm-required" placeholder="First Name">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Middle Name</label>
+            <input data-cm-field="cm_Middle_Name" class="form-control" placeholder="Middle Name">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Age</label>
+            <input id="ageCm___IDX__" data-cm-field="cm_Age" type="number" min="0" class="form-control" placeholder="Age" readonly>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Gender</label>
+            <input list="genderList" data-cm-field="cm_Gender" class="form-control" placeholder="Select or type..." autocomplete="off">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Date of Birth</label>
+            <input id="dobCm___IDX__" data-cm-field="cm_Date_Of_Birth" type="date" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Place of Birth</label>
+            <div class="d-flex gap-2">
+                <input id="pobProvCm___IDX__" list="pobProvCmList___IDX__" class="form-control" placeholder="Province..." autocomplete="off">
+                <datalist id="pobProvCmList___IDX__"></datalist>
+                <input id="pobCityCm___IDX__" list="pobCityCmList___IDX__" class="form-control" placeholder="City/Municipality..." autocomplete="off">
+                <datalist id="pobCityCmList___IDX__"></datalist>
+            </div>
+            <input type="hidden" data-cm-field="cm_Place_Of_Birth" id="pobHiddenCm___IDX__">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Civil Status</label>
+            <input list="cmSharedCivilList" data-cm-field="cm_Civil_Status" class="form-control" placeholder="Select or type..." autocomplete="off">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">No. of Children</label>
+            <input list="cmSharedChildrenList" data-cm-field="cm_No_Of_Children" class="form-control" placeholder="Select or type..." autocomplete="off">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Mobile No.</label>
+            <input id="mobileCm___IDX__" data-cm-field="cm_Mobile_No" type="tel" inputmode="numeric" class="form-control cm-mobile" placeholder="09xx-xxx-xxxx" maxlength="13">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Email Address</label>
+            <input data-cm-field="cm_Email_Address" type="email" class="form-control" placeholder="email@example.com">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">ID Presented</label>
+            <input list="idPresentedList" data-cm-field="cm_ID_Presented" class="form-control" placeholder="Select or type..." autocomplete="off">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">ID Reference No.</label>
+            <input data-cm-field="cm_ID_Reference_No" class="form-control" placeholder="Reference number">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Name of Spouse</label>
+            <input data-cm-field="cm_Name_Of_Spouse" class="form-control" placeholder="Spouse's Full Name">
+        </div>
+    </div>
+
+    <!-- Address -->
+    <div class="cf-section-title" style="margin-top:1.25rem"><i class="fa fa-map-marker-alt"></i> Address</div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Region</label>
+            <input id="regionCm___IDX__" list="cmSharedRegionList" class="form-control" placeholder="Select or type region..." autocomplete="off">
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">House / Street / Building</label>
+            <input data-cm-field="cm_House_Street_Bldng" class="form-control" placeholder="Blk 1 Lot 2, Sampaguita St.">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Province</label>
+            <input id="provinceCm___IDX__" list="provCmList___IDX__" data-cm-field="cm_Province" class="form-control" placeholder="Select or type province..." autocomplete="off">
+            <datalist id="provCmList___IDX__"></datalist>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">City / Municipality</label>
+            <input id="cityCm___IDX__" list="cityCmList___IDX__" data-cm-field="cm_City_Municipality" class="form-control" placeholder="Select or type city..." autocomplete="off">
+            <datalist id="cityCmList___IDX__"></datalist>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Barangay / Town</label>
+            <input id="brgyCm___IDX__" list="brgyCmList___IDX__" data-cm-field="cm_Barangay_Town" class="form-control" placeholder="Select or type barangay..." autocomplete="off">
+            <datalist id="brgyCmList___IDX__"></datalist>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Zip Code</label>
+            <input data-cm-field="cm_Zip_Code" class="form-control" placeholder="0000">
+        </div>
+    </div>
+
+    <!-- Financial Info -->
+    <div class="cf-section-title" style="margin-top:1.25rem"><i class="fa fa-coins"></i> Financial Information</div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Income Source</label>
+            <input data-cm-field="cm_Income_Source" class="form-control" placeholder="e.g. Employment">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Other Income Source</label>
+            <input data-cm-field="cm_Other_Income_Source" class="form-control" placeholder="Other sources">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Monthly Income</label>
+            <input data-cm-field="cm_Montly_Income" type="number" step="0.01" class="form-control" placeholder="0.00">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Business Name</label>
+            <input data-cm-field="cm_Business_Name" class="form-control" placeholder="Business Name">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Business Address</label>
+            <input data-cm-field="cm_Business_Address" class="form-control" placeholder="Business Address">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Primary Bank</label>
+            <input data-cm-field="cm_Primary_Bank" class="form-control" placeholder="e.g. BDO, BPI">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Name of Lending Institution</label>
+            <input data-cm-field="cm_Name_Of_Lending" class="form-control" placeholder="Lending institution name">
+        </div>
+    </div>
+
+    <!-- Relationship -->
+    <div class="cf-section-title" style="margin-top:1.25rem"><i class="fa fa-handshake"></i> Relationship to Client</div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Relationship</label>
+            <input data-cm-field="cm_Relationship" class="form-control" placeholder="e.g. Friend, Sibling, Colleague">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Acquaintance Duration (years)</label>
+            <input data-cm-field="cm_Acquaintance_Duration" type="number" step="0.1" min="0" class="form-control" placeholder="0.0">
+        </div>
+    </div>
+</div>
+            </template>
 
             <script>
             // Live avatar preview
@@ -1271,87 +1332,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
                 }
 
                 provInput.addEventListener('change', populateCities);
+                provInput.addEventListener('input',  function(){ if (PROV_CODE_MAP[provInput.value]) populateCities(); });
                 cityInput.addEventListener('change', updateHidden);
+                cityInput.addEventListener('input',  updateHidden);
             }
 
             document.addEventListener('DOMContentLoaded', function() {
-                bindProvinceDropdown('regionClient',  'provinceClient',  'provClientList');
-                bindProvinceDropdown('regionComaker', 'provinceComaker', 'provComakerList');
-                bindCityDropdown('provinceClient',  'cityClient',  'cityClientList');
-                bindCityDropdown('provinceComaker', 'cityComaker', 'cityComakerList');
-                bindBarangayDropdown('cityClient',  'brgyClient',  'brgyClientList');
-                bindBarangayDropdown('cityComaker', 'brgyComaker', 'brgyComakerList');
-                bindPobDropdowns('pobProvClient',  'pobCityClient',  'pobProvClientList',  'pobCityClientList',  'pobHiddenClient');
-                bindPobDropdowns('pobProvComaker', 'pobCityComaker', 'pobProvComakerList', 'pobCityComakerList', 'pobHiddenComaker');
+                // Client form dropdowns
+                bindProvinceDropdown('regionClient', 'provinceClient', 'provClientList');
+                bindCityDropdown('provinceClient', 'cityClient', 'cityClientList');
+                bindBarangayDropdown('cityClient', 'brgyClient', 'brgyClientList');
+                bindPobDropdowns('pobProvClient', 'pobCityClient', 'pobProvClientList', 'pobCityClientList', 'pobHiddenClient');
 
                 // Wire branch input to hidden Branch_ID
-                var branchInput = document.getElementById('branchInput');
+                var branchInput  = document.getElementById('branchInput');
                 var branchHidden = document.getElementById('branchIdHidden');
                 if (branchInput && branchHidden) {
-                    branchInput.addEventListener('change', function(){
-                        var id = BRANCH_MAP[branchInput.value] || '';
-                        branchHidden.value = id;
-                    });
-                    // clear hidden if input cleared
-                    branchInput.addEventListener('input', function(){ if (!branchInput.value) branchHidden.value = ''; });
+                    branchInput.addEventListener('change', function(){ branchHidden.value = BRANCH_MAP[branchInput.value] || ''; });
+                    branchInput.addEventListener('input',  function(){ if (!branchInput.value) branchHidden.value = ''; });
                 }
             });
 
-            // Compute age from date-of-birth and populate readonly age fields
-            (function(){
-                function calcAge(dobStr){
-                    if(!dobStr) return '';
-                    var today = new Date();
-                    var dob = new Date(dobStr);
-                    if (isNaN(dob)) return '';
-                    var age = today.getFullYear() - dob.getFullYear();
-                    var m = today.getMonth() - dob.getMonth();
-                    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-                    return age >= 0 ? age : '';
-                }
+            // ── Age calc ────────────────────────────────────────────────────
+            function calcAge(dobStr) {
+                if (!dobStr) return '';
+                var today = new Date(), dob = new Date(dobStr);
+                if (isNaN(dob)) return '';
+                var age = today.getFullYear() - dob.getFullYear();
+                var m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                return age >= 0 ? age : '';
+            }
+            function bindDobAge(dobId, ageId) {
+                var dob = document.getElementById(dobId);
+                var age = document.getElementById(ageId);
+                if (!dob || !age) return;
+                age.readOnly = true;
+                dob.addEventListener('change', function(){ age.value = calcAge(dob.value); });
+                if (dob.value) age.value = calcAge(dob.value);
+            }
 
-                function bind(dobId, ageId){
-                    var dob = document.getElementById(dobId);
-                    var age = document.getElementById(ageId);
-                    if(!dob || !age) return;
-                    age.readOnly = true;
-                    dob.addEventListener('change', function(){
-                        age.value = calcAge(dob.value);
-                    });
-                    // initial compute if value preset
-                    if (dob.value) age.value = calcAge(dob.value);
-                }
-
-                document.addEventListener('DOMContentLoaded', function(){
-                    bind('dobClient','ageClient');
-                    bind('dobSpouse','ageSpouse');
-                    bind('dobComaker','ageComaker');
-                    // Mobile formatting: auto-insert dashes to match 09xx-xxx-xxxx
-                    function formatMobileValue(val){
-                        var digits = val.replace(/\D/g,'').slice(0,11);
-                        if(digits.length <= 4) return digits;
-                        if(digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
-                        return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
-                    }
-
-                    function bindMobile(id){
-                        var el = document.getElementById(id);
-                        if(!el) return;
-                        el.addEventListener('input', function(e){
-                            var pos = el.selectionStart;
-                            var before = el.value;
-                            el.value = formatMobileValue(el.value);
-                            // try to keep caret near the end (best-effort)
-                            if (el.selectionStart < pos) el.selectionStart = el.selectionEnd = el.value.length;
-                        });
-                        // format initial value if present
-                        if(el.value) el.value = formatMobileValue(el.value);
-                    }
-
-                    bindMobile('mobileClient');
-                    bindMobile('mobileComaker');
+            // ── Mobile formatter ─────────────────────────────────────────────
+            function formatMobileValue(val) {
+                var digits = val.replace(/\D/g,'').slice(0,11);
+                if (digits.length <= 4) return digits;
+                if (digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
+                return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
+            }
+            function bindMobileInput(el) {
+                if (!el) return;
+                el.addEventListener('input', function(){
+                    el.value = formatMobileValue(el.value);
                 });
-            })();
+                if (el.value) el.value = formatMobileValue(el.value);
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                bindDobAge('dobClient', 'ageClient');
+                bindDobAge('dobSpouse', 'ageSpouse');
+                bindMobileInput(document.getElementById('mobileClient'));
+            });
+
+            // ── Co-maker panel factory ───────────────────────────────────────
+            var CM_TEMPLATE_HTML = '';
+            document.addEventListener('DOMContentLoaded', function(){
+                var tpl = document.getElementById('comakerPanelTpl');
+                if (tpl) CM_TEMPLATE_HTML = tpl.innerHTML;
+            });
+
+            function createComakerPanel(idx) {
+                var html = CM_TEMPLATE_HTML.replace(/__IDX__/g, idx);
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html;
+                return wrap.firstElementChild;
+            }
+
+            function renderComakerPanels(containerId, count) {
+                var container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+                for (var i = 1; i <= count; i++) {
+                    var panel = createComakerPanel(i);
+                    container.appendChild(panel);
+                    // Bind DOB→age using panel-scoped query to avoid ID conflicts between containers
+                    (function(p){
+                        var dobEl = p.querySelector('[data-cm-field="cm_Date_Of_Birth"]');
+                        var ageEl = p.querySelector('[data-cm-field="cm_Age"]');
+                        if (dobEl && ageEl) {
+                            ageEl.readOnly = true;
+                            function recalcAge(){ ageEl.value = calcAge(dobEl.value); }
+                            dobEl.addEventListener('change', recalcAge);
+                            dobEl.addEventListener('input',  recalcAge);
+                            if (dobEl.value) recalcAge();
+                        }
+                    })(panel);
+                    bindMobileInput(document.getElementById('mobileCm_' + i));
+                    bindProvinceDropdown('regionCm_' + i, 'provinceCm_' + i, 'provCmList_' + i);
+                    bindCityDropdown('provinceCm_' + i, 'cityCm_' + i, 'cityCmList_' + i);
+                    bindBarangayDropdown('cityCm_' + i, 'brgyCm_' + i, 'brgyCmList_' + i);
+                    bindPobDropdowns('pobProvCm_' + i, 'pobCityCm_' + i, 'pobProvCmList_' + i, 'pobCityCmList_' + i, 'pobHiddenCm_' + i);
+                    (function(idx, p){
+                        var clearBtn = p.querySelector('.comaker-clear-btn');
+                        if (clearBtn) {
+                            clearBtn.addEventListener('click', function(){
+                                p.querySelectorAll('input:not([readonly])').forEach(function(el){ el.value = ''; });
+                                var ageEl = document.getElementById('ageCm_' + idx);
+                                if (ageEl) ageEl.value = '';
+                            });
+                        }
+                    })(i, panel);
+                }
+            }
+
+            // ── Extract FormData from a single panel ─────────────────────────
+            function buildCmFormData(panel, clientId) {
+                var fd = new FormData();
+                fd.append('save_comaker', '1');
+                fd.append('cm_Client_ID', clientId || '');
+                panel.querySelectorAll('[data-cm-field]').forEach(function(el){
+                    fd.append(el.getAttribute('data-cm-field'), el.value || '');
+                });
+                return fd;
+            }
             </script>
 
             <!-- Footer Start -->
@@ -1382,44 +1484,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
-        // ── Co-maker tab toggle (+/-) ──────────────────────────────────────
-        var btnToggle      = document.getElementById('btnToggleComaker');
-        var comakerTabItem = document.getElementById('comakerTabItem');
-        var iconToggle     = document.getElementById('iconToggleComaker');
-        var tabClientLnk   = document.getElementById('tab-client-lnk');
-        var tabComakerLnk  = document.getElementById('tab-comaker-lnk');
 
-        if (btnToggle && comakerTabItem) {
-            btnToggle.addEventListener('click', function(){
-                var isOpen = comakerTabItem.style.display !== 'none';
-                if (isOpen) {
-                    // Close co-maker tab: switch to client, hide tab item
-                    if (tabClientLnk) tabClientLnk.click();
-                    comakerTabItem.style.display = 'none';
-                    iconToggle.className = 'fa fa-plus';
-                    btnToggle.classList.remove('is-open');
-                    btnToggle.title = 'Open Co-maker tab';
+        // ── Tab-based button visibility ────────────────────────────────────────
+        var btnSaveAll       = document.getElementById('btnSaveAll');
+        var btnSaveExisting2 = document.getElementById('btnSaveExistingComakers');
+        document.querySelectorAll('#mainTabs .nav-link').forEach(function(link){
+            link.addEventListener('shown.bs.tab', function(){
+                var target = this.getAttribute('href') || this.dataset.bsTarget || '';
+                var isExisting = target === '#tab-existing';
+                if (btnSaveAll)       btnSaveAll.style.display       = isExisting ? 'none' : '';
+                if (btnSaveExisting2) btnSaveExisting2.style.display = isExisting ? ''     : 'none';
+            });
+        });
+
+        // ── Co-maker count selector ──────────────────────────────────────────
+        var comakerCountSel = document.getElementById('comakerCountSelect');
+        if (comakerCountSel) {
+            function refreshComakerPanels() {
+                var n = parseInt(comakerCountSel.value) || 0;
+                renderComakerPanels('comakerPanelsContainer', n);
+            }
+            comakerCountSel.addEventListener('change', refreshComakerPanels);
+            comakerCountSel.addEventListener('input', refreshComakerPanels);
+            // Render initial panels (value is "None (skip)" → 0 panels)
+            refreshComakerPanels();
+        }
+
+        // ── Existing client co-maker count selector ──────────────────────────
+        var existingCountSel = document.getElementById('existingComakerCount');
+        if (existingCountSel) {
+            existingCountSel.addEventListener('change', function(){
+                var n = parseInt(existingCountSel.value) || 1;
+                renderComakerPanels('existingComakerPanels', n);
+            });
+            existingCountSel.addEventListener('input', function(){
+                var n = parseInt(existingCountSel.value) || 1;
+                renderComakerPanels('existingComakerPanels', n);
+            });
+        }
+
+        // ── Existing client search ───────────────────────────────────────────
+        var searchInput    = document.getElementById('existingClientSearch');
+        var searchBtn      = document.getElementById('btnSearchExistingClient');
+        var resultsList    = document.getElementById('existingClientResultsList');
+        var selectedCard   = document.getElementById('selectedClientCard');
+        var selectedName   = document.getElementById('selectedClientName');
+        var selectedIdDisp = document.getElementById('selectedClientIdDisplay');
+        var existingIdHid  = document.getElementById('existingClientIdHidden');
+        var existingSetup  = document.getElementById('existingCmSetup');
+
+        function doClientSearch() {
+            var q = searchInput ? searchInput.value.trim() : '';
+            if (!q || q.length < 2) return;
+            resultsList.innerHTML = '<div style="padding:.5rem;color:rgba(255,255,255,.4);font-size:.8rem;"><i class="fa fa-spinner fa-spin me-1"></i> Searching…</div>';
+            fetch(window.location.href + '?action=search_client&q=' + encodeURIComponent(q), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                resultsList.innerHTML = '';
+                if (!data.length) {
+                    resultsList.innerHTML = '<div style="padding:.5rem;color:rgba(255,255,255,.35);font-size:.8rem;">No clients found.</div>';
+                    return;
+                }
+                data.forEach(function(row){
+                    var item = document.createElement('div');
+                    item.className = 'cm-search-result-item';
+                    item.innerHTML = '<strong>' + escHtml(row.Full_Name) + '</strong> <span style="opacity:.55;font-size:.8rem;">' + escHtml(row.Client_ID) + '</span>';
+                    item.addEventListener('click', function(){
+                        selectExistingClient(row.Client_ID, row.Full_Name);
+                    });
+                    resultsList.appendChild(item);
+                });
+            })
+            .catch(function(){ resultsList.innerHTML = '<div style="color:#f87171;padding:.5rem;font-size:.8rem;">Search failed.</div>'; });
+        }
+
+        if (searchBtn)   searchBtn.addEventListener('click', doClientSearch);
+        if (searchInput) searchInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); doClientSearch(); } });
+
+        function selectExistingClient(cid, name) {
+            if (existingIdHid)  existingIdHid.value = cid;
+            if (selectedName)   selectedName.textContent  = name;
+            if (selectedIdDisp) selectedIdDisp.textContent = 'Client ID: ' + cid;
+            if (selectedCard)   selectedCard.style.display = '';
+            if (existingSetup)  existingSetup.style.display = '';
+            if (resultsList)    resultsList.innerHTML = '';
+            // Render co-maker panels for existing client
+            var n = parseInt((existingCountSel ? existingCountSel.value : '1')) || 1;
+            renderComakerPanels('existingComakerPanels', n);
+        }
+
+        // ── Save existing client co-makers ───────────────────────────────────
+        var btnSaveExisting = document.getElementById('btnSaveExistingComakers');
+        if (btnSaveExisting) {
+            btnSaveExisting.addEventListener('click', async function(){
+                var cid = existingIdHid ? existingIdHid.value.trim() : '';
+                if (!cid) {
+                    Swal.fire({ icon:'warning', title:'No Client Selected', text:'Please search and select a client first.', confirmButtonText:'OK' });
+                    return;
+                }
+                var panels = document.querySelectorAll('#existingComakerPanels .comaker-panel');
+                if (!panels.length) return;
+                // validate at least first + last name in each panel
+                var valid = true;
+                panels.forEach(function(panel, i){
+                    var ln = panel.querySelector('[data-cm-field="cm_Last_Name"]');
+                    var fn = panel.querySelector('[data-cm-field="cm_First_Name"]');
+                    if (!ln || !ln.value.trim() || !fn || !fn.value.trim()) {
+                        Swal.fire({ icon:'error', title:'Missing Name', text:'Co-maker ' + (i+1) + ': First and Last name are required.', confirmButtonText:'OK' });
+                        valid = false;
+                    }
+                });
+                if (!valid) return;
+
+                btnSaveExisting.disabled = true;
+                btnSaveExisting.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving…';
+
+                var saved = 0, errors = [];
+                for (var i = 0; i < panels.length; i++) {
+                    var fd = buildCmFormData(panels[i], cid);
+                    try {
+                        var res = await postAjax(fd);
+                        if (res && res.status === 'success') { saved++; }
+                        else { errors.push('Co-maker ' + (i+1) + ': ' + (res ? res.message : 'Unknown error')); }
+                    } catch(err) { errors.push('Co-maker ' + (i+1) + ': ' + err.message); }
+                }
+
+                btnSaveExisting.disabled = false;
+                btnSaveExisting.innerHTML = '<i class="fa fa-save me-1"></i> Save Co-maker(s)';
+
+                if (errors.length === 0) {
+                    Swal.fire({ icon:'success', title:'Saved', html: saved + ' co-maker(s) added to <b>' + escHtml(cid) + '</b>.', confirmButtonText:'OK' });
+                    renderComakerPanels('existingComakerPanels', parseInt(existingCountSel ? existingCountSel.value : '1') || 1);
                 } else {
-                    // Open co-maker tab: show tab item, switch to it
-                    comakerTabItem.style.display = '';
-                    iconToggle.className = 'fa fa-minus';
-                    btnToggle.classList.add('is-open');
-                    btnToggle.title = 'Close Co-maker tab';
-                    if (tabComakerLnk) tabComakerLnk.click();
+                    var msg = saved > 0 ? saved + ' saved. Errors:<br>' : 'Errors:<br>';
+                    msg += errors.map(escHtml).join('<br>');
+                    Swal.fire({ icon:'warning', title:'Partial Save', html: msg, confirmButtonText:'OK' });
                 }
             });
         }
-        // ──────────────────────────────────────────────────────────────────
 
+        // ── Combined Save (new client + co-makers) ───────────────────────────
         var btnSaveAll = document.getElementById('btnSaveAll');
         var clientForm = document.getElementById('clientForm');
-        var cmForm     = document.getElementById('comakerForm');
-
-        // Block accidental native form submits (Enter-key guard; no submit buttons present)
         if (clientForm) clientForm.addEventListener('submit', function(e){ e.preventDefault(); });
-        if (cmForm)     cmForm.addEventListener('submit',     function(e){ e.preventDefault(); });
-
-        if (!btnSaveAll) return;
 
         function digitsOnly(str){ return str ? str.replace(/\D/g,'') : ''; }
 
@@ -1434,97 +1643,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['save_comaker'])) {
             catch(e){ throw new Error('Invalid JSON: ' + text.substring(0, 300)); }
         }
 
-        function resetBtn(){
-            btnSaveAll.disabled = false;
-            btnSaveAll.innerHTML = '<i class="fa fa-save me-1"></i> Save Registration';
+        function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        function resetSaveBtn(){
+            if (btnSaveAll) {
+                btnSaveAll.disabled = false;
+                btnSaveAll.innerHTML = '<i class="fa fa-save me-1"></i> Save Registration';
+            }
         }
 
-        btnSaveAll.addEventListener('click', async function(){
+        function fullReset(){
+            if (clientForm) clientForm.reset();
+            var avatarWrap = document.getElementById('avatarWrap');
+            if (avatarWrap) avatarWrap.innerHTML = '<span class="cf-avatar-placeholder"><i class="fa fa-user"></i></span>';
+            // Reset co-maker panels to 1
+            var sel = document.getElementById('comakerCountSelect');
+            if (sel) { sel.value = '1'; renderComakerPanels('comakerPanelsContainer', 1); }
+            // Return to client tab
+            var tabClientLnk = document.getElementById('tab-client-lnk');
+            if (tabClientLnk) tabClientLnk.click();
+        }
 
-            // ── Validate client form required fields ──────────────────────
-            if (!clientForm.checkValidity()){
-                clientForm.reportValidity();
-                return;
-            }
-            var mobileEl = document.getElementById('mobileClient');
-            if (mobileEl && mobileEl.value){
-                if (digitsOnly(mobileEl.value).length !== 11 || !mobileEl.value.startsWith('09')){
-                    Swal.fire({ icon:'error', title:'Invalid Mobile', text:'Client mobile must be 11 digits starting with 09', confirmButtonText:'OK' });
-                    return;
-                }
-            }
-
-            btnSaveAll.disabled = true;
-            btnSaveAll.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving&hellip;';
-
-            // ── Step 1: Save Client ───────────────────────────────────────
-            var clientResult = null;
-            var clientId     = '';
-            try {
-                clientResult = await postAjax(new FormData(clientForm));
-            } catch(err){
-                Swal.fire({ icon:'error', title:'Error', text:'Network error: ' + err.message, confirmButtonText:'OK' });
-                resetBtn(); return;
-            }
-            if (!clientResult || clientResult.status !== 'success'){
-                Swal.fire({ icon:'error', title:'Client Save Failed', text: clientResult ? clientResult.message : 'Unknown error', confirmButtonText:'OK' });
-                resetBtn(); return;
-            }
-            var idMatch = clientResult.message.match(/CL-[A-Z0-9]{5}/);
-            clientId = idMatch ? idMatch[0] : '';
-
-            // ── Step 2: Save Co-maker (optional — only if name fields filled) ──
-            var cmLastEl  = cmForm.querySelector('[name="cm_Last_Name"]');
-            var cmFirstEl = cmForm.querySelector('[name="cm_First_Name"]');
-            var hasCm = (cmLastEl && cmLastEl.value.trim()) || (cmFirstEl && cmFirstEl.value.trim());
-
-            if (hasCm){
-                var mobileCm = document.getElementById('mobileComaker');
-                if (mobileCm && mobileCm.value){
-                    if (digitsOnly(mobileCm.value).length !== 11 || !mobileCm.value.startsWith('09')){
-                        Swal.fire({ icon:'warning', title:'Partial Save',
-                            html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker mobile is invalid; co-maker was not saved.',
-                            confirmButtonText:'OK' });
-                        clientForm.reset(); resetBtn(); return;
+        if (btnSaveAll) {
+            btnSaveAll.addEventListener('click', async function(){
+                if (!clientForm.checkValidity()){ clientForm.reportValidity(); return; }
+                var mobileEl = document.getElementById('mobileClient');
+                if (mobileEl && mobileEl.value) {
+                    if (digitsOnly(mobileEl.value).length !== 11 || !mobileEl.value.startsWith('09')){
+                        Swal.fire({ icon:'error', title:'Invalid Mobile', text:'Client mobile must be 11 digits starting with 09.', confirmButtonText:'OK' });
+                        return;
                     }
                 }
 
-                // Inject the newly created Client_ID into the co-maker hidden field
-                var cmClientIdEl = document.getElementById('cm_Client_ID');
-                if (cmClientIdEl) cmClientIdEl.value = clientId;
+                btnSaveAll.disabled = true;
+                btnSaveAll.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving…';
 
-                var cmResult = null;
+                // Step 1: Save client
+                var clientResult, clientId = '';
                 try {
-                    cmResult = await postAjax(new FormData(cmForm));
-                } catch(err){
-                    Swal.fire({ icon:'warning', title:'Partial Save',
-                        html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker network error: ' + err.message,
-                        confirmButtonText:'OK' });
-                    clientForm.reset(); resetBtn(); return;
+                    clientResult = await postAjax(new FormData(clientForm));
+                } catch(err) {
+                    Swal.fire({ icon:'error', title:'Network Error', text:err.message, confirmButtonText:'OK' });
+                    resetSaveBtn(); return;
+                }
+                if (!clientResult || clientResult.status !== 'success'){
+                    Swal.fire({ icon:'error', title:'Client Save Failed', text: clientResult ? clientResult.message : 'Unknown error', confirmButtonText:'OK' });
+                    resetSaveBtn(); return;
+                }
+                var idMatch = clientResult.message.match(/CL-[A-Z0-9]{5}/);
+                clientId = idMatch ? idMatch[0] : '';
+
+                // Step 2: Save co-makers (all panels that have name filled)
+                var cmPanels = document.querySelectorAll('#comakerPanelsContainer .comaker-panel');
+                var cmSaved = 0, cmErrors = [];
+                for (var i = 0; i < cmPanels.length; i++) {
+                    var ln = cmPanels[i].querySelector('[data-cm-field="cm_Last_Name"]');
+                    var fn = cmPanels[i].querySelector('[data-cm-field="cm_First_Name"]');
+                    if (!ln || !ln.value.trim()) continue; // skip empty panels
+                    // Validate mobile if filled
+                    var mob = cmPanels[i].querySelector('[data-cm-field="cm_Mobile_No"]');
+                    if (mob && mob.value && (digitsOnly(mob.value).length !== 11 || !mob.value.startsWith('09'))) {
+                        cmErrors.push('Co-maker ' + (i+1) + ': invalid mobile number.');
+                        continue;
+                    }
+                    try {
+                        var fd = buildCmFormData(cmPanels[i], clientId);
+                        var res = await postAjax(fd);
+                        if (res && res.status === 'success') { cmSaved++; }
+                        else { cmErrors.push('Co-maker ' + (i+1) + ': ' + (res ? res.message : 'Unknown')); }
+                    } catch(err) { cmErrors.push('Co-maker ' + (i+1) + ': ' + err.message); }
                 }
 
-                if (cmResult && cmResult.status === 'success'){
+                resetSaveBtn();
+
+                if (cmErrors.length) {
+                    Swal.fire({ icon:'warning', title:'Partial Save',
+                        html:'Client saved &mdash; <b>' + escHtml(clientId) + '</b>.<br>' + cmSaved + ' co-maker(s) saved.<br>Errors:<br>' + cmErrors.map(escHtml).join('<br>'),
+                        confirmButtonText:'OK' });
+                } else if (cmSaved > 0) {
                     Swal.fire({ icon:'success', title:'Registration Complete',
-                        html:'Client and Co-maker registered successfully.<br><b>Client ID:</b> ' + clientId,
+                        html:'Client and ' + cmSaved + ' co-maker(s) saved.<br><b>Client ID:</b> ' + escHtml(clientId),
                         confirmButtonText:'OK' });
-                    clientForm.reset();
-                    cmForm.reset();
                 } else {
-                    Swal.fire({ icon:'warning', title:'Partial Save',
-                        html:'Client saved &mdash; <b>' + clientId + '</b>.<br>Co-maker error: ' + (cmResult ? cmResult.message : 'Unknown'),
+                    Swal.fire({ icon:'success', title:'Client Saved',
+                        html:'Client registered successfully.<br><b>Client ID:</b> ' + escHtml(clientId),
                         confirmButtonText:'OK' });
-                    clientForm.reset();
                 }
-            } else {
-                // No co-maker data entered — client-only save
-                Swal.fire({ icon:'success', title:'Client Saved',
-                    html:'Client registered successfully.<br><b>Client ID:</b> ' + clientId,
-                    confirmButtonText:'OK' });
-                clientForm.reset();
-            }
-
-            resetBtn();
-        });
+                fullReset();
+            });
+        }
     });
     </script>
 </body>

@@ -60,33 +60,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['edit_id'])) {
     $e_spincome  = $_POST['edit_Spouse_Income'] ?? null;
     $e_exp       = $_POST['edit_Exp_ID'] ?? null;
 
-    $update_sql = "UPDATE tbl_client_info SET
-        Branch_ID=?, Last_Name=?, First_Name=?, Middle_Name=?, Nickname=?,
-        Age=?, Gender=?, Date_Of_Birth=?, Place_Of_Birth=?, Civil_Status=?, Religion=?,
-        Mother_Last_Name=?, Mother_First_Name=?, Mother_Middle_Name=?,
-        Mobile_No=?, Email_Address=?, House_Street_Bldng=?, Barangay_Town=?, City_Municipality=?, Province=?,
-        Zip_Code=?, Educational_Attainment=?, No_Of_Children=?, ID_Presented=?, ID_Reference_No=?,
-        Spouse_Last_Name=?, Spouse_First_Name=?, Spouse_Middle_Name=?, Spouse_Work=?, Spouse_Nickname=?, Spouse_Age=?, Spouse_DOB=?, Spouse_Income=?,
-        Exp_ID=?
-        WHERE id=?";
-    $ustmt = mysqli_prepare($conn, $update_sql);
-    if ($ustmt) {
-        mysqli_stmt_bind_param($ustmt, 'ssssssssssssssssssssssssssssssssssi',
-            $e_branch, $e_last, $e_first, $e_middle, $e_nick,
-            $e_age, $e_gender, $e_dob, $e_pob, $e_civil, $e_religion,
-            $e_mlast, $e_mfirst, $e_mmiddle,
-            $e_mobile, $e_email, $e_house, $e_barangay, $e_city, $e_province,
-            $e_zip, $e_edu, $e_children, $e_idpres, $e_idref,
-            $e_splast, $e_spfirst, $e_spmiddle, $e_spwork, $e_spnick, $e_spage, $e_spdob, $e_spincome,
-            $e_exp, $eid);
-        if (mysqli_stmt_execute($ustmt)) {
-            $success = 'Record updated successfully.';
+    // Handle optional profile picture upload
+    $e_prof_pic = null;
+    $has_pic_upload = false;
+    if (!empty($_FILES['edit_Prof_Pic']['tmp_name']) && $_FILES['edit_Prof_Pic']['error'] === UPLOAD_ERR_OK) {
+        $allowed_mime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime_check = $finfo->file($_FILES['edit_Prof_Pic']['tmp_name']);
+        if (in_array($mime_check, $allowed_mime, true) && $_FILES['edit_Prof_Pic']['size'] <= 5 * 1024 * 1024) {
+            $e_prof_pic = file_get_contents($_FILES['edit_Prof_Pic']['tmp_name']);
+            $has_pic_upload = true;
         } else {
-            $error = 'Update failed: ' . mysqli_stmt_error($ustmt);
+            $error = 'Invalid image file. Only JPG, PNG, GIF, WEBP up to 5MB allowed.';
         }
-        mysqli_stmt_close($ustmt);
-    } else {
-        $error = 'Update prepare failed: ' . mysqli_error($conn);
+    }
+
+    if (!isset($error)) {
+        if ($has_pic_upload) {
+            $update_sql = "UPDATE tbl_client_info SET
+                Branch_ID=?, Last_Name=?, First_Name=?, Middle_Name=?, Nickname=?,
+                Age=?, Gender=?, Date_Of_Birth=?, Place_Of_Birth=?, Civil_Status=?, Religion=?,
+                Mother_Last_Name=?, Mother_First_Name=?, Mother_Middle_Name=?,
+                Mobile_No=?, Email_Address=?, House_Street_Bldng=?, Barangay_Town=?, City_Municipality=?, Province=?,
+                Zip_Code=?, Educational_Attainment=?, No_Of_Children=?, ID_Presented=?, ID_Reference_No=?,
+                Spouse_Last_Name=?, Spouse_First_Name=?, Spouse_Middle_Name=?, Spouse_Work=?, Spouse_Nickname=?, Spouse_Age=?, Spouse_DOB=?, Spouse_Income=?,
+                Exp_ID=?, Prof_Pic=?
+                WHERE id=?";
+            $ustmt = mysqli_prepare($conn, $update_sql);
+            if ($ustmt) {
+                $null_blob = null;
+                mysqli_stmt_bind_param($ustmt, 'ssssssssssssssssssssssssssssssssssbi',
+                    $e_branch, $e_last, $e_first, $e_middle, $e_nick,
+                    $e_age, $e_gender, $e_dob, $e_pob, $e_civil, $e_religion,
+                    $e_mlast, $e_mfirst, $e_mmiddle,
+                    $e_mobile, $e_email, $e_house, $e_barangay, $e_city, $e_province,
+                    $e_zip, $e_edu, $e_children, $e_idpres, $e_idref,
+                    $e_splast, $e_spfirst, $e_spmiddle, $e_spwork, $e_spnick, $e_spage, $e_spdob, $e_spincome,
+                    $e_exp, $null_blob, $eid);
+                mysqli_stmt_send_long_data($ustmt, 34, $e_prof_pic);
+                if (mysqli_stmt_execute($ustmt)) {
+                    $success = 'Record updated successfully.';
+                } else {
+                    $error = 'Update failed: ' . mysqli_stmt_error($ustmt);
+                }
+                mysqli_stmt_close($ustmt);
+            } else {
+                $error = 'Update prepare failed: ' . mysqli_error($conn);
+            }
+        } else {
+            $update_sql = "UPDATE tbl_client_info SET
+                Branch_ID=?, Last_Name=?, First_Name=?, Middle_Name=?, Nickname=?,
+                Age=?, Gender=?, Date_Of_Birth=?, Place_Of_Birth=?, Civil_Status=?, Religion=?,
+                Mother_Last_Name=?, Mother_First_Name=?, Mother_Middle_Name=?,
+                Mobile_No=?, Email_Address=?, House_Street_Bldng=?, Barangay_Town=?, City_Municipality=?, Province=?,
+                Zip_Code=?, Educational_Attainment=?, No_Of_Children=?, ID_Presented=?, ID_Reference_No=?,
+                Spouse_Last_Name=?, Spouse_First_Name=?, Spouse_Middle_Name=?, Spouse_Work=?, Spouse_Nickname=?, Spouse_Age=?, Spouse_DOB=?, Spouse_Income=?,
+                Exp_ID=?
+                WHERE id=?";
+            $ustmt = mysqli_prepare($conn, $update_sql);
+            if ($ustmt) {
+                mysqli_stmt_bind_param($ustmt, 'ssssssssssssssssssssssssssssssssssi',
+                    $e_branch, $e_last, $e_first, $e_middle, $e_nick,
+                    $e_age, $e_gender, $e_dob, $e_pob, $e_civil, $e_religion,
+                    $e_mlast, $e_mfirst, $e_mmiddle,
+                    $e_mobile, $e_email, $e_house, $e_barangay, $e_city, $e_province,
+                    $e_zip, $e_edu, $e_children, $e_idpres, $e_idref,
+                    $e_splast, $e_spfirst, $e_spmiddle, $e_spwork, $e_spnick, $e_spage, $e_spdob, $e_spincome,
+                    $e_exp, $eid);
+                if (mysqli_stmt_execute($ustmt)) {
+                    $success = 'Record updated successfully.';
+                } else {
+                    $error = 'Update failed: ' . mysqli_stmt_error($ustmt);
+                }
+                mysqli_stmt_close($ustmt);
+            } else {
+                $error = 'Update prepare failed: ' . mysqli_error($conn);
+            }
+        }
     }
 }
 
@@ -460,9 +510,22 @@ if (isset($_GET['fetch_clients'])) {
                                         <h5 class="modal-title" id="clientEditLabel">Edit Client</h5>
                                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <form method="post">
+                                    <form method="post" enctype="multipart/form-data">
                                     <div class="modal-body">
                                         <input type="hidden" name="edit_id" id="edit_id">
+
+                                        <h6 class="border-bottom border-secondary pb-1 mb-2">Profile Picture</h6>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-auto">
+                                                <img id="editPicPreview" src="" alt="Current Photo"
+                                                     style="width:96px;height:96px;object-fit:cover;border-radius:6px;background:#333;display:none;">
+                                                <div id="editPicPlaceholder" style="width:96px;height:96px;background:#333;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;">No photo</div>
+                                            </div>
+                                            <div class="col d-flex flex-column justify-content-center">
+                                                <label class="form-label mb-1">Upload new photo <small class="text-muted">(JPG/PNG/GIF/WEBP, max 5 MB — leave blank to keep current)</small></label>
+                                                <input type="file" name="edit_Prof_Pic" id="edit_Prof_Pic" class="form-control" accept="image/*">
+                                            </div>
+                                        </div>
 
                                         <h6 class="border-bottom border-secondary pb-1 mb-2">Personal Information</h6>
                                         <div class="row g-2">
@@ -798,10 +861,42 @@ if (isset($_GET['fetch_clients'])) {
         });
 
         // ---- Populate client EDIT modal ----
+        // Live preview when a new image is selected in the edit modal
+        $('#edit_Prof_Pic').on('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#editPicPreview').attr('src', e.target.result).show();
+                    $('#editPicPlaceholder').hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Reset file input when modal closes so stale preview doesn't carry over
+        $('#clientEditModal').on('hidden.bs.modal', function() {
+            $('#edit_Prof_Pic').val('');
+        });
+
         $('#clientEditModal').on('show.bs.modal', function(event) {
             var b = $(event.relatedTarget);
             var m = $(this);
             m.find('#edit_id').val(b.data('id')||'');
+
+            // Load current profile picture as preview
+            var rowId = b.data('id') || '';
+            var preview = m.find('#editPicPreview');
+            var placeholder = m.find('#editPicPlaceholder');
+            preview.hide().attr('src', '');
+            placeholder.show();
+            if (rowId) {
+                var ts = Date.now();
+                preview.attr('src', 'client_record.php?fetch_pic=' + encodeURIComponent(rowId) + '&_t=' + ts)
+                    .off('load error')
+                    .on('load', function(){ preview.show(); placeholder.hide(); })
+                    .on('error', function(){ preview.hide(); placeholder.show(); });
+            }
             m.find('#edit_Branch_ID').val(b.data('branchid')||'');
             m.find('#edit_Exp_ID').val(b.data('exp')||'');
             m.find('#edit_Last_Name').val(b.data('last')||'');
